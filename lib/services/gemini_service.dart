@@ -149,9 +149,9 @@ Return a valid JSON object strictly matching this schema:
         'Lack of trained tea boys fluent in Saudi VIP corporate etiquette',
         'Administrative overhead of managing individual employee visas & leaves'
       ],
-      recommended_action:
+      recommendedAction:
           'Send 1-tap WhatsApp corporate pitch highlighting trained Tea Boys & immediate backup replacement guarantee in ${lead.hub}.',
-      follow_up_message: '''
+      followUpMessage: '''
 السلام عليكم ورحمة الله،
 أهلاً وسهلاً سعادة الأستاذ ${lead.contactPerson.isNotEmpty ? lead.contactPerson : 'المسئول'} في ${lead.companyName} (${lead.hub})،
 يسعدنا في مؤسسة الضيافة الذكية تزويد مكاتبكم بكوادر مدربة من (مقدمي الضيافة Tea Boys ومسؤولي النظافة المكتبية) بدوام كامل، زي رسمي موحد، وبديل فوري معتمد. هل ترغبون بجدولة زيارة تجريبية مجانية؟
