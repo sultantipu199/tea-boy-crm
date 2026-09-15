@@ -144,7 +144,7 @@ Return a valid JSON object strictly matching this schema:
 
     return AiAnalysis(
       sentiment: score >= 80 ? 'High Interest' : 'Neutral',
-      pain_points: [
+      painPoints: [
         'Unreliable independent cleaners causing office disruption',
         'Lack of trained tea boys fluent in Saudi VIP corporate etiquette',
         'Administrative overhead of managing individual employee visas & leaves'
