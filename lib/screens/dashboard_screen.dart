@@ -265,7 +265,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ],
       ),
       body: SafeArea(
-        child: Column(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1000),
+            child: Column(
           children: [
             // Search Bar & Sort Toggle Row
             Padding(
@@ -440,6 +443,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
             ),
           ],
+        ),
+          ),
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(

@@ -171,7 +171,10 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
         ],
       ),
       body: SafeArea(
-        child: SingleChildScrollView(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1000),
+            child: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -201,6 +204,8 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
 
               const SizedBox(height: 32),
             ],
+          ),
+        ),
           ),
         ),
       ),

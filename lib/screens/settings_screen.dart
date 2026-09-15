@@ -179,7 +179,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
       ),
       body: SafeArea(
-        child: SingleChildScrollView(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1000),
+            child: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -390,6 +393,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
               const SizedBox(height: 24),
             ],
+          ),
+        ),
           ),
         ),
       ),

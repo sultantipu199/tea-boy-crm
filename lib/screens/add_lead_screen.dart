@@ -155,7 +155,10 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
         ),
       ),
       body: SafeArea(
-        child: SingleChildScrollView(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1000),
+            child: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
           child: Form(
             key: _formKey,
@@ -411,6 +414,8 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
                 const SizedBox(height: 24),
               ],
             ),
+          ),
+        ),
           ),
         ),
       ),
