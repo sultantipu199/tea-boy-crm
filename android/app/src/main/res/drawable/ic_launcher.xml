@@ -1,0 +1,53 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Emerald Background Circle -->
+    <path
+        android:fillColor="#006C4F"
+        android:pathData="M54,4 C26.4,4 4,26.4 4,54 C4,81.6 26.4,104 54,104 C81.6,104 104,81.6 104,54 C104,26.4 81.6,4 54,4 Z" />
+    
+    <!-- Gold Trim Inner Ring -->
+    <path
+        android:strokeColor="#D4AF37"
+        android:strokeWidth="2"
+        android:pathData="M54,10 C29.7,10 10,29.7 10,54 C10,78.3 29.7,98 54,98 C78.3,98 98,78.3 98,54 C98,29.7 78.3,10 54,10 Z" />
+
+    <!-- Tea Cup Base / Body -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M34,46 L74,46 C74,62 65,74 54,74 C43,74 34,62 34,46 Z" />
+
+    <!-- Cup Handle -->
+    <path
+        android:strokeColor="#D4AF37"
+        android:strokeWidth="4"
+        android:fillColor="#00000000"
+        android:pathData="M72,50 C80,50 82,62 72,66" />
+
+    <!-- Saucer -->
+    <path
+        android:fillColor="#D4AF37"
+        android:pathData="M30,76 L78,76 C79,76 80,77 80,78 C80,79 79,80 78,80 L30,80 C29,80 28,79 28,78 C28,77 29,76 30,76 Z" />
+
+    <!-- Steam Waves -->
+    <path
+        android:strokeColor="#D4AF37"
+        android:strokeWidth="2.5"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000"
+        android:pathData="M46,38 C44,34 48,30 46,26" />
+    <path
+        android:strokeColor="#D4AF37"
+        android:strokeWidth="2.5"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000"
+        android:pathData="M54,38 C52,34 56,30 54,26" />
+    <path
+        android:strokeColor="#D4AF37"
+        android:strokeWidth="2.5"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000"
+        android:pathData="M62,38 C60,34 64,30 62,26" />
+</vector>
