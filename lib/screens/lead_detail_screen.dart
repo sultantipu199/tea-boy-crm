@@ -7,6 +7,7 @@ import '../services/hive_service.dart';
 import '../services/whatsapp_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/ai_score_badge.dart';
+import '../widgets/quotation_calculator_dialog.dart';
 import '../widgets/status_badge.dart';
 
 class LeadDetailScreen extends StatefulWidget {
@@ -22,6 +23,7 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
   late Lead? _lead;
   bool _isAnalyzing = false;
   late TextEditingController _notesController;
+  PitchAngle _selectedPitchAngle = PitchAngle.vipHospitality;
 
   static const List<String> _allStatuses = [
     'New',
@@ -73,6 +75,153 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
         ),
       );
     }
+  }
+
+  Future<void> _setFollowUp(String? date) async {
+    if (_lead == null) return;
+    await HiveService.instance.setFollowUpDate(_lead!.id, date);
+    final refreshed = HiveService.instance.getLeadById(_lead!.id);
+    setState(() {
+      _lead = refreshed;
+    });
+  }
+
+  Future<void> _pickFollowUpDate() async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: now.add(const Duration(days: 1)),
+      firstDate: now,
+      lastDate: DateTime(2030),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: AppTheme.saudiEmerald,
+              onPrimary: Colors.white,
+              onSurface: AppTheme.slateNavy,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (picked != null) {
+      await _setFollowUp(picked.toIso8601String().split('T').first);
+    }
+  }
+
+  void _openLogActivityDialog() {
+    String selectedType = 'Call';
+    final noteController = TextEditingController();
+    String? newStatus;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Row(
+            children: const [
+              Icon(Icons.edit_note, color: AppTheme.saudiEmerald),
+              SizedBox(width: 8),
+              Text(
+                'Log Sales Interaction',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppTheme.slateNavy),
+              ),
+            ],
+          ),
+          content: SizedBox(
+            width: 400,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Activity Type:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                const SizedBox(height: 6),
+                Wrap(
+                  spacing: 6,
+                  children: ['Call', 'WhatsApp', 'Visit', 'Quotation', 'Note'].map((type) {
+                    final isSel = type == selectedType;
+                    return ChoiceChip(
+                      label: Text(type),
+                      selected: isSel,
+                      selectedColor: AppTheme.saudiEmerald,
+                      labelStyle: TextStyle(
+                        color: isSel ? Colors.white : AppTheme.slateNavy,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      onSelected: (_) => setDialogState(() => selectedType = type),
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: 12),
+                const Text('Interaction Summary / Outcome:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                const SizedBox(height: 6),
+                TextField(
+                  controller: noteController,
+                  maxLines: 3,
+                  decoration: InputDecoration(
+                    hintText: 'e.g. Called GM Tariq. Agreed on 2 VIP tea boys for boardroom. Sent SAR quote.',
+                    hintStyle: const TextStyle(fontSize: 12, color: AppTheme.textMuted),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    const Text('Update Status: ', style: TextStyle(fontSize: 12, color: AppTheme.textMuted)),
+                    const SizedBox(width: 8),
+                    DropdownButton<String>(
+                      value: newStatus ?? _lead?.status,
+                      isDense: true,
+                      underline: const SizedBox(),
+                      items: _allStatuses.map((s) => DropdownMenuItem(value: s, child: Text(s, style: const TextStyle(fontSize: 12)))).toList(),
+                      onChanged: (val) => setDialogState(() => newStatus = val),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel', style: TextStyle(color: AppTheme.textMuted)),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                if (noteController.text.trim().isEmpty) return;
+                final now = DateTime.now();
+                final dateStr = '${now.toIso8601String().split('T').first} ${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
+                final activity = LeadActivity(
+                  id: DateTime.now().millisecondsSinceEpoch.toString(),
+                  type: selectedType,
+                  date: dateStr,
+                  note: noteController.text.trim(),
+                );
+
+                await HiveService.instance.addActivity(_lead!.id, activity);
+                if (newStatus != null && newStatus != _lead!.status) {
+                  await HiveService.instance.updateLeadStatus(_lead!.id, newStatus!);
+                }
+
+                final refreshed = HiveService.instance.getLeadById(_lead!.id);
+                setState(() {
+                  _lead = refreshed;
+                });
+                Navigator.pop(ctx);
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: AppTheme.saudiEmerald, foregroundColor: Colors.white),
+              child: const Text('Save Activity'),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Future<void> _runAiAnalysis() async {
@@ -199,6 +348,11 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
 
               const SizedBox(height: 16),
 
+              // Activity Log Timeline Card
+              _buildActivityTimelineCard(lead),
+
+              const SizedBox(height: 16),
+
               // Notes Card
               _buildNotesCard(),
 
@@ -293,6 +447,64 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
                 ),
               ],
             ),
+            const SizedBox(height: 14),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      side: const BorderSide(color: AppTheme.saudiEmerald),
+                    ),
+                    onPressed: () =>
+                        WhatsAppService.launchPhoneCall(lead.saudiMobile),
+                    icon: const Icon(Icons.phone, size: 15, color: AppTheme.saudiEmerald),
+                    label: const Text('Call',
+                        style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: AppTheme.saudiEmerald)),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      side: const BorderSide(color: AppTheme.royalGold),
+                    ),
+                    onPressed: () => WhatsAppService.launchMaps(lead.hub),
+                    icon: const Icon(Icons.map_outlined,
+                        size: 15, color: AppTheme.royalGold),
+                    label: const Text('Navigate',
+                        style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: AppTheme.royalGold)),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      backgroundColor: AppTheme.slateNavy,
+                    ),
+                    onPressed: () => showDialog(
+                      context: context,
+                      builder: (_) => QuotationCalculatorDialog(lead: lead),
+                    ),
+                    icon: const Icon(Icons.calculate_outlined,
+                        size: 15, color: Colors.white),
+                    label: const Text('SAR Quote',
+                        style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white)),
+                  ),
+                ),
+              ],
+            ),
           ],
         ),
       ),
@@ -361,6 +573,57 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
                     }
                   },
                 ),
+              ],
+            ),
+            const Divider(height: 24, color: AppTheme.borderGrey),
+            // Follow-up Callback Schedule
+            Row(
+              children: [
+                Icon(
+                  Icons.alarm,
+                  size: 18,
+                  color: lead.isFollowUpDue ? Colors.red : AppTheme.saudiEmerald,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        lead.followUpDate != null && lead.followUpDate!.isNotEmpty
+                            ? 'Follow-up: ${lead.followUpDate}'
+                            : 'No Follow-up Scheduled',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: lead.isFollowUpDue ? Colors.red : AppTheme.slateNavy,
+                        ),
+                      ),
+                      Text(
+                        lead.isFollowUpDue
+                            ? '⚠️ Action required: Follow-up is due today or overdue!'
+                            : 'Scheduled callback with client',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: lead.isFollowUpDue ? Colors.red : AppTheme.textMuted,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                TextButton(
+                  onPressed: () => _pickFollowUpDate(),
+                  child: Text(
+                    lead.followUpDate == null ? 'Set Date' : 'Change',
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                ),
+                if (lead.followUpDate != null)
+                  IconButton(
+                    icon: const Icon(Icons.close, size: 16, color: Colors.grey),
+                    tooltip: 'Clear Reminder',
+                    onPressed: () => _setFollowUp(null),
+                  ),
               ],
             ),
           ],
@@ -617,49 +880,252 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
               const SizedBox(height: 12),
             ],
 
-            // Standard Staffing Pitch
-            ExpansionTile(
-              title: const Text(
-                'View Standard Staffing Pitch',
-                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-              ),
-              tilePadding: EdgeInsets.zero,
+            // Targeted Multi-Angle Pitch Selector
+            const Text(
+              'Select Corporate Pitch Angle:',
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 6),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
               children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF8FAFC),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: AppTheme.borderGrey),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        standardPitch,
-                        style: const TextStyle(fontSize: 12, height: 1.4, color: AppTheme.textDark),
-                      ),
-                      const SizedBox(height: 10),
-                      SizedBox(
-                        width: double.infinity,
-                        child: OutlinedButton.icon(
-                          onPressed: () {
-                            WhatsAppService.copyScriptAndDispatch(
-                              context: context,
-                              phone: lead.saudiMobile,
-                              message: standardPitch,
-                              companyName: lead.companyName,
-                            );
-                          },
-                          icon: const Icon(Icons.copy_all, size: 15),
-                          label: const Text('Copy Standard Script & Launch WhatsApp'),
+                ChoiceChip(
+                  label: const Text('☕ VIP Tea Boy'),
+                  selected: _selectedPitchAngle == PitchAngle.vipHospitality,
+                  onSelected: (_) => setState(
+                      () => _selectedPitchAngle = PitchAngle.vipHospitality),
+                ),
+                ChoiceChip(
+                  label: const Text('🍽️ Pantry Logistics'),
+                  selected: _selectedPitchAngle == PitchAngle.pantryLogistics,
+                  onSelected: (_) => setState(
+                      () => _selectedPitchAngle = PitchAngle.pantryLogistics),
+                ),
+                ChoiceChip(
+                  label: const Text('✨ Night Cleaning'),
+                  selected: _selectedPitchAngle == PitchAngle.nightCleaning,
+                  onSelected: (_) => setState(
+                      () => _selectedPitchAngle = PitchAngle.nightCleaning),
+                ),
+                ChoiceChip(
+                  label: const Text('🎁 1-Week Free Trial'),
+                  selected: _selectedPitchAngle == PitchAngle.freeTrial,
+                  onSelected: (_) =>
+                      setState(() => _selectedPitchAngle = PitchAngle.freeTrial),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Builder(builder: (ctx) {
+              final angledPitch = WhatsAppService.generateAngledPitch(
+                angle: _selectedPitchAngle,
+                companyName: lead.companyName,
+                contactPerson: lead.contactPerson,
+                hub: lead.hub,
+                staffing: lead.staffingRequirements,
+              );
+
+              return Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF8FAFC),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: AppTheme.borderGrey),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      angledPitch,
+                      style: const TextStyle(
+                          fontSize: 12, height: 1.4, color: AppTheme.textDark),
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppTheme.saudiEmerald,
+                              padding: const EdgeInsets.symmetric(vertical: 10),
+                            ),
+                            onPressed: () {
+                              WhatsAppService.copyScriptAndDispatch(
+                                context: context,
+                                phone: lead.saudiMobile,
+                                message: angledPitch,
+                                companyName: lead.companyName,
+                              );
+                            },
+                            icon: const Icon(Icons.send_rounded, size: 14),
+                            label: const Text('1-Tap: Send This Pitch'),
+                          ),
                         ),
+                        const SizedBox(width: 8),
+                        OutlinedButton.icon(
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 10),
+                          ),
+                          onPressed: () => showDialog(
+                            context: context,
+                            builder: (_) =>
+                                QuotationCalculatorDialog(lead: lead),
+                          ),
+                          icon: const Icon(Icons.calculate_outlined, size: 16),
+                          label: const Text('SAR Quote'),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              );
+            }),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActivityTimelineCard(Lead lead) {
+    return Card(
+      elevation: 1,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: const [
+                    Icon(Icons.history_toggle_off_outlined, color: AppTheme.saudiEmerald, size: 20),
+                    SizedBox(width: 8),
+                    Text(
+                      'Activity Log & Interactions',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: AppTheme.slateNavy,
                       ),
-                    ],
+                    ),
+                  ],
+                ),
+                ElevatedButton.icon(
+                  onPressed: _openLogActivityDialog,
+                  icon: const Icon(Icons.add, size: 14),
+                  label: const Text('Log Action'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.saudiEmerald,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                   ),
                 ),
               ],
             ),
+            const SizedBox(height: 12),
+            if (lead.activities.isEmpty)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF8FAFC),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: AppTheme.borderGrey),
+                ),
+                child: const Text(
+                  'No interactions logged yet. Tap "+ Log Action" after calling the client, visiting their office, or sending WhatsApp proposals.',
+                  style: TextStyle(fontSize: 12, color: AppTheme.textMuted),
+                ),
+              )
+            else
+              ListView.separated(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: lead.activities.length,
+                separatorBuilder: (_, __) => const Divider(height: 16, color: AppTheme.borderGrey),
+                itemBuilder: (context, i) {
+                  final act = lead.activities[i];
+                  IconData icon;
+                  Color color;
+                  switch (act.type) {
+                    case 'Call':
+                      icon = Icons.phone;
+                      color = AppTheme.saudiEmerald;
+                      break;
+                    case 'WhatsApp':
+                      icon = Icons.chat;
+                      color = const Color(0xFF25D366);
+                      break;
+                    case 'Visit':
+                      icon = Icons.location_city;
+                      color = AppTheme.royalGold;
+                      break;
+                    case 'Quotation':
+                      icon = Icons.receipt_long;
+                      color = AppTheme.slateNavy;
+                      break;
+                    default:
+                      icon = Icons.notes;
+                      color = AppTheme.textMuted;
+                  }
+
+                  return Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: color.withOpacity(0.12),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(icon, size: 14, color: color),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  act.type,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w700,
+                                    color: color,
+                                  ),
+                                ),
+                                Text(
+                                  act.date,
+                                  style: const TextStyle(
+                                    fontSize: 10.5,
+                                    color: AppTheme.textMuted,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              act.note,
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: AppTheme.slateNavy,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
           ],
         ),
       ),
@@ -675,7 +1141,7 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'Internal Account Notes',
+              'Sales Notes & Context',
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w700,

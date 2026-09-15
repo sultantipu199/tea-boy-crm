@@ -1,18 +1,22 @@
 import 'package:flutter/material.dart';
 import '../models/lead.dart';
+import '../services/hive_service.dart';
 import '../services/whatsapp_service.dart';
 import '../theme/app_theme.dart';
 import 'ai_score_badge.dart';
+import 'quotation_calculator_dialog.dart';
 import 'status_badge.dart';
 
 class LeadCard extends StatelessWidget {
   final Lead lead;
   final VoidCallback onTap;
+  final ValueChanged<String>? onStatusChanged;
 
   const LeadCard({
     super.key,
     required this.lead,
     required this.onTap,
+    this.onStatusChanged,
   });
 
   @override
@@ -27,7 +31,7 @@ class LeadCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header: Company Name + Status Badge
+              // Header: Company Name + Status Badge + Quick Status Menu
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -35,31 +39,62 @@ class LeadCard extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          lead.companyName,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                            color: AppTheme.textDark,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                lead.companyName,
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppTheme.textDark,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFE6F4EA),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                '${lead.estimatedMonthlyValue.toStringAsFixed(0)} SAR/mo',
+                                style: const TextStyle(
+                                  fontSize: 10.5,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppTheme.saudiEmerald,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                         const SizedBox(height: 4),
                         Row(
                           children: [
-                            const Icon(
-                              Icons.location_on_outlined,
-                              size: 14,
-                              color: AppTheme.royalGold,
-                            ),
-                            const SizedBox(width: 3),
-                            Text(
-                              lead.hub,
-                              style: const TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                color: AppTheme.slateSurface,
+                            InkWell(
+                              onTap: () => WhatsAppService.launchMaps(lead.hub),
+                              borderRadius: BorderRadius.circular(4),
+                              child: Row(
+                                children: [
+                                  const Icon(
+                                    Icons.location_on_outlined,
+                                    size: 14,
+                                    color: AppTheme.royalGold,
+                                  ),
+                                  const SizedBox(width: 2),
+                                  Text(
+                                    lead.hub,
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppTheme.slateSurface,
+                                      decoration: TextDecoration.underline,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                             const SizedBox(width: 10),
@@ -76,13 +111,82 @@ class LeadCard extends StatelessWidget {
                                 color: AppTheme.textMuted,
                               ),
                             ),
+                            if (lead.isFollowUpDue) ...[
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 5, vertical: 1),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFFEE2E2),
+                                  borderRadius: BorderRadius.circular(4),
+                                  border: Border.all(
+                                      color: const Color(0xFFF87171), width: 0.5),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(Icons.alarm,
+                                        size: 10, color: Color(0xFFDC2626)),
+                                    const SizedBox(width: 2),
+                                    Text(
+                                      lead.isFollowUpToday
+                                          ? 'Follow-up Today'
+                                          : 'Follow-up Due',
+                                      style: const TextStyle(
+                                        fontSize: 9.5,
+                                        fontWeight: FontWeight.w700,
+                                        color: Color(0xFFDC2626),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ] else if (lead.followUpDate != null &&
+                                lead.followUpDate!.isNotEmpty) ...[
+                              const SizedBox(width: 8),
+                              Text(
+                                'Due: ${lead.followUpDate}',
+                                style: const TextStyle(
+                                    fontSize: 10.5, color: AppTheme.textMuted),
+                              ),
+                            ],
                           ],
                         ),
                       ],
                     ),
                   ),
                   const SizedBox(width: 8),
-                  StatusBadge(status: lead.status),
+                  PopupMenuButton<String>(
+                    initialValue: lead.status,
+                    tooltip: 'Change Status',
+                    onSelected: (newStatus) async {
+                      if (onStatusChanged != null) {
+                        onStatusChanged!(newStatus);
+                      } else {
+                        await HiveService.instance
+                            .updateLeadStatus(lead.id, newStatus);
+                      }
+                    },
+                    itemBuilder: (context) => [
+                      'New',
+                      'Contacted',
+                      'Interested',
+                      'Closed',
+                      'Disqualified'
+                    ].map((s) => PopupMenuItem(
+                          value: s,
+                          child: Row(
+                            children: [
+                              StatusBadge(status: s),
+                              const SizedBox(width: 8),
+                              if (s == lead.status)
+                                const Icon(Icons.check,
+                                    size: 16, color: AppTheme.saudiEmerald),
+                            ],
+                          ),
+                        )).toList(),
+                    child: StatusBadge(status: lead.status),
+                  ),
                 ],
               ),
 
@@ -157,11 +261,11 @@ class LeadCard extends StatelessWidget {
                 }).toList(),
               ),
 
-              const Divider(height: 20, thickness: 0.8, color: AppTheme.borderGrey),
+              const Divider(
+                  height: 20, thickness: 0.8, color: AppTheme.borderGrey),
 
-              // Bottom Action Row: 1-Tap "Copy Script & Launch WhatsApp"
+              // Bottom Action Row: Call, Quote Calculator, 1-Tap WhatsApp
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   if (lead.notes.isNotEmpty)
                     Expanded(
@@ -179,6 +283,34 @@ class LeadCard extends StatelessWidget {
                   else
                     const Spacer(),
                   const SizedBox(width: 8),
+
+                  // Call Phone Action
+                  IconButton(
+                    icon: const Icon(Icons.phone_outlined,
+                        size: 18, color: AppTheme.saudiEmerald),
+                    tooltip: 'Direct Phone Call',
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                    onPressed: () =>
+                        WhatsAppService.launchPhoneCall(lead.saudiMobile),
+                  ),
+                  const SizedBox(width: 10),
+
+                  // Instant Quote Calculator Action
+                  IconButton(
+                    icon: const Icon(Icons.calculate_outlined,
+                        size: 20, color: AppTheme.royalGold),
+                    tooltip: 'Instant SAR Quote',
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                    onPressed: () => showDialog(
+                      context: context,
+                      builder: (_) => QuotationCalculatorDialog(lead: lead),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+
+                  // WhatsApp Dispatch Action
                   ElevatedButton.icon(
                     onPressed: () {
                       final pitch = WhatsAppService.generatePitchTemplate(

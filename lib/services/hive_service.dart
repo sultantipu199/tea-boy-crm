@@ -84,6 +84,106 @@ class HiveService {
     return null;
   }
 
+  /// Add activity log to lead
+  Future<void> addActivity(String leadId, LeadActivity activity) async {
+    final lead = getLeadById(leadId);
+    if (lead != null) {
+      final updatedActivities = List<LeadActivity>.from(lead.activities)..insert(0, activity);
+      final updated = lead.copyWith(activities: updatedActivities);
+      await updateLead(updated);
+    }
+  }
+
+  /// Update lead status directly
+  Future<void> updateLeadStatus(String leadId, String newStatus) async {
+    final lead = getLeadById(leadId);
+    if (lead != null) {
+      final updated = lead.copyWith(status: newStatus);
+      await updateLead(updated);
+    }
+  }
+
+  /// Update follow up date directly
+  Future<void> setFollowUpDate(String leadId, String? followUpDate) async {
+    final lead = getLeadById(leadId);
+    if (lead != null) {
+      final updated = lead.copyWith(followUpDate: followUpDate);
+      await updateLead(updated);
+    }
+  }
+
+  /// Export all leads as standard RFC 4180 CSV string
+  String exportToCsv() {
+    final leads = getAllLeads();
+    final buffer = StringBuffer();
+    // CSV Header
+    buffer.writeln('Company Name,Contact Person,Phone,Hub,Staffing Requirements,Status,Date Added,Follow Up Date,Deal Score,Monthly SAR Est,Notes');
+
+    for (final l in leads) {
+      final comp = '"${l.companyName.replaceAll('"', '""')}"';
+      final contact = '"${l.contactPerson.replaceAll('"', '""')}"';
+      final phone = '"${l.saudiMobile}"';
+      final hub = '"${l.hub}"';
+      final reqs = '"${l.staffingRequirements.join('; ')}"';
+      final status = '"${l.status}"';
+      final dateAdded = '"${l.dateAdded}"';
+      final followUp = '"${l.followUpDate ?? ''}"';
+      final score = l.aiAnalysis?.dealScore ?? 0;
+      final estMonthly = l.estimatedMonthlyValue.toStringAsFixed(0);
+      final notes = '"${l.notes.replaceAll('"', '""').replaceAll('\n', ' ')}"';
+
+      buffer.writeln('$comp,$contact,$phone,$hub,$reqs,$status,$dateAdded,$followUp,$score,$estMonthly,$notes');
+    }
+
+    return buffer.toString();
+  }
+
+  /// Generate Executive Pipeline Daily Briefing string for 1-tap WhatsApp sharing
+  String generatePipelineExecutiveBriefing() {
+    final leads = getAllLeads();
+    final total = leads.length;
+    final hotDeals = leads.where((l) => (l.aiAnalysis?.dealScore ?? 0) >= 75).toList();
+    final closed = leads.where((l) => l.status.toLowerCase() == 'closed').length;
+    final followUpsDue = leads.where((l) => l.isFollowUpDue).toList();
+
+    double totalMonthlyVal = 0.0;
+    final Map<String, int> hubCounts = {};
+    for (final l in leads) {
+      if (l.status.toLowerCase() != 'disqualified') {
+        totalMonthlyVal += l.estimatedMonthlyValue;
+        hubCounts[l.hub] = (hubCounts[l.hub] ?? 0) + 1;
+      }
+    }
+
+    final dateStr = DateTime.now().toIso8601String().split('T').first;
+
+    final hubBreakdown = hubCounts.entries
+        .map((e) => '• ${e.key}: ${e.value} leads')
+        .join('\n');
+
+    final followUpSection = followUpsDue.isNotEmpty
+        ? '\n⚠️ *Follow-ups Due Today / Overdue:* ${followUpsDue.length}\n' +
+            followUpsDue.take(4).map((l) => '  - ${l.companyName} (${l.contactPerson} - ${l.saudiMobile})').join('\n')
+        : '\n✅ *Follow-ups:* All current calls up to date.';
+
+    return '''
+📊 *TEA BOY CRM - Daily Pipeline Briefing*
+📍 *Riyadh Corporate Staffing & Hospitality*
+📅 Date: $dateStr
+━━━━━━━━━━━━━━━━━━━━
+📈 *Active Pipeline:* $total Total Leads
+🔥 *High-Priority Deals (AI ≥75%):* ${hotDeals.length}
+🏆 *Closed Contracts:* $closed
+💰 *Estimated Monthly Volume:* ${totalMonthlyVal.toStringAsFixed(0)} SAR / mo (+ 15% VAT)
+$followUpSection
+
+🏢 *Distribution by Corporate Hub:*
+$hubBreakdown
+
+⚡ Generated directly via TEA BOY Mobile CRM
+''';
+  }
+
   /// Get stored Gemini API key
   String? getApiKey() {
     return settingsBox.get('gemini_api_key')?.toString();
@@ -120,6 +220,21 @@ class HiveService {
         status: 'Interested',
         notes: 'Requested VIP tea boy fluent in English & Arabic for executive floor.',
         dateAdded: today,
+        followUpDate: today,
+        activities: [
+          LeadActivity(
+            id: '1',
+            type: 'Call',
+            date: '$today 10:30',
+            note: 'Spoke with Sultan Al-Otaibi. He requested official quotation for 1 Tea Boy and 1 Pantry Staff.',
+          ),
+          LeadActivity(
+            id: '2',
+            type: 'Quotation',
+            date: '$today 11:15',
+            note: 'Sent formal SAR quote (9,200 SAR/mo including 15% VAT). Awaiting board approval.',
+          ),
+        ],
       ),
       Lead.create(
         companyName: 'Riyadh Tech Accelerator',
@@ -130,6 +245,15 @@ class HiveService {
         status: 'Contacted',
         notes: 'Needs 2 office cleaners and 1 tea boy for 3-floor incubator building.',
         dateAdded: today,
+        followUpDate: yesterday,
+        activities: [
+          LeadActivity(
+            id: '3',
+            type: 'WhatsApp',
+            date: '$today 09:15',
+            note: 'Sent VIP Hospitality pitch via WhatsApp. Read with blue ticks.',
+          ),
+        ],
       ),
       Lead.create(
         companyName: 'Al-Rajhi Corporate Tower HQ',
@@ -150,6 +274,14 @@ class HiveService {
         status: 'Closed',
         notes: 'Signed 1-year contract for 2 pantry coordinators and 2 tea boys.',
         dateAdded: threeDaysAgo,
+        activities: [
+          LeadActivity(
+            id: '4',
+            type: 'Visit',
+            date: '$threeDaysAgo 14:00',
+            note: 'In-person meeting at KPMG Tower, Floor 18. Finalized contract terms and uniform requirements.',
+          ),
+        ],
       ),
       Lead.create(
         companyName: 'Malqa Executive Clinics Group',

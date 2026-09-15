@@ -1,5 +1,37 @@
 import 'ai_analysis.dart';
 
+class LeadActivity {
+  final String id;
+  final String type; // 'Call', 'WhatsApp', 'Visit', 'Quotation', 'Note'
+  final String date; // YYYY-MM-DD HH:mm
+  final String note;
+
+  LeadActivity({
+    required this.id,
+    required this.type,
+    required this.date,
+    required this.note,
+  });
+
+  factory LeadActivity.fromJson(Map<dynamic, dynamic> map) {
+    return LeadActivity(
+      id: map['id']?.toString() ?? '',
+      type: map['type']?.toString() ?? 'Note',
+      date: map['date']?.toString() ?? '',
+      note: map['note']?.toString() ?? '',
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'type': type,
+      'date': date,
+      'note': note,
+    };
+  }
+}
+
 class Lead {
   final String id; // Composite Primary Key: companyName_sanitizedPhone
   final String companyName;
@@ -10,6 +42,8 @@ class Lead {
   String status; // New, Contacted, Interested, Closed, Disqualified
   String notes;
   final String dateAdded; // Formatted YYYY-MM-DD
+  String? followUpDate; // Formatted YYYY-MM-DD
+  List<LeadActivity> activities;
   AiAnalysis? aiAnalysis;
 
   Lead({
@@ -22,6 +56,8 @@ class Lead {
     required this.status,
     required this.notes,
     required this.dateAdded,
+    this.followUpDate,
+    this.activities = const [],
     this.aiAnalysis,
   });
 
@@ -58,6 +94,8 @@ class Lead {
     String status = 'New',
     String notes = '',
     String? dateAdded,
+    String? followUpDate,
+    List<LeadActivity>? activities,
     AiAnalysis? aiAnalysis,
   }) {
     final key = buildCompositeKey(companyName, saudiMobile);
@@ -73,6 +111,8 @@ class Lead {
       status: status,
       notes: notes,
       dateAdded: today,
+      followUpDate: followUpDate,
+      activities: activities ?? [],
       aiAnalysis: aiAnalysis,
     );
   }
@@ -92,6 +132,11 @@ class Lead {
       notes: map['notes']?.toString() ?? '',
       dateAdded: map['date_added']?.toString() ??
           DateTime.now().toIso8601String().split('T').first,
+      followUpDate: map['follow_up_date']?.toString(),
+      activities: (map['activities'] as List<dynamic>?)
+              ?.map((e) => LeadActivity.fromJson(e as Map))
+              .toList() ??
+          [],
       aiAnalysis: map['ai_analysis'] != null
           ? AiAnalysis.fromJson(
               Map<String, dynamic>.from(map['ai_analysis'] as Map))
@@ -110,6 +155,8 @@ class Lead {
       'status': status,
       'notes': notes,
       'date_added': dateAdded,
+      'follow_up_date': followUpDate,
+      'activities': activities.map((a) => a.toJson()).toList(),
       'ai_analysis': aiAnalysis?.toJson(),
     };
   }
@@ -117,6 +164,8 @@ class Lead {
   Lead copyWith({
     String? status,
     String? notes,
+    String? followUpDate,
+    List<LeadActivity>? activities,
     AiAnalysis? aiAnalysis,
   }) {
     return Lead(
@@ -129,7 +178,39 @@ class Lead {
       status: status ?? this.status,
       notes: notes ?? this.notes,
       dateAdded: dateAdded,
+      followUpDate: followUpDate ?? this.followUpDate,
+      activities: activities ?? this.activities,
       aiAnalysis: aiAnalysis ?? this.aiAnalysis,
     );
   }
+
+  /// Whether a follow-up callback is due or overdue
+  bool get isFollowUpDue {
+    if (followUpDate == null || followUpDate!.isEmpty) return false;
+    if (status.toLowerCase() == 'closed' || status.toLowerCase() == 'disqualified') {
+      return false;
+    }
+    final today = DateTime.now().toIso8601String().split('T').first;
+    return followUpDate!.compareTo(today) <= 0;
+  }
+
+  /// Whether a follow-up callback is scheduled precisely for today
+  bool get isFollowUpToday {
+    if (followUpDate == null || followUpDate!.isEmpty) return false;
+    final today = DateTime.now().toIso8601String().split('T').first;
+    return followUpDate == today;
+  }
+
+  /// Estimated Monthly Contract Value (SAR before VAT)
+  double get estimatedMonthlyValue {
+    double total = 0.0;
+    for (final req in staffingRequirements) {
+      if (req == 'Tea Boy') total += 4200.0;
+      else if (req == 'Pantry Staff') total += 3800.0;
+      else if (req == 'Cleaners') total += 3200.0;
+      else total += 3500.0;
+    }
+    return total;
+  }
 }
+

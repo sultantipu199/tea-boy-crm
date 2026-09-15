@@ -22,6 +22,7 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
   String _selectedHub = 'KAFD';
   final List<String> _selectedStaffing = ['Tea Boy'];
   String _dateAdded = DateTime.now().toIso8601String().split('T').first;
+  String? _followUpDate;
   bool _isSaving = false;
   String? _duplicateErrorMessage;
 
@@ -49,6 +50,156 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
     super.dispose();
   }
 
+  void _parseAndAutoFill(String raw) {
+    // 1. Phone number detection: look for Saudi mobile formats
+    final phoneRegex = RegExp(r'(?:\+?966|00966|0)?5\d{8}');
+    final phoneMatch = phoneRegex.firstMatch(raw);
+    if (phoneMatch != null) {
+      _phoneController.text = phoneMatch.group(0)!;
+    }
+
+    // 2. Hub detection:
+    final lower = raw.toLowerCase();
+    if (lower.contains('kafd') || raw.contains('كافد') || lower.contains('financial district')) {
+      _selectedHub = 'KAFD';
+    } else if (lower.contains('olaya') || raw.contains('العليا')) {
+      _selectedHub = 'Al Olaya';
+    } else if (lower.contains('king fahd') || lower.contains('fahad') || raw.contains('الملك فهد')) {
+      _selectedHub = 'King Fahd Rd';
+    } else if (lower.contains('malqa') || raw.contains('الملقا')) {
+      _selectedHub = 'Al Malqa';
+    } else if (lower.contains('digital city') || raw.contains('الرقمية')) {
+      _selectedHub = 'Digital City';
+    } else if (lower.contains('business gate') || raw.contains('بوابة الأعمال')) {
+      _selectedHub = 'Business Gate';
+    }
+
+    // 3. Staffing Requirements detection:
+    final newStaffing = <String>[];
+    if (lower.contains('tea') || lower.contains('boy') || raw.contains('شاي') || raw.contains('قهوجي') || raw.contains('ضيافة')) {
+      newStaffing.add('Tea Boy');
+    }
+    if (lower.contains('pantry') || raw.contains('بوفيه') || raw.contains('مطبخ')) {
+      newStaffing.add('Pantry Staff');
+    }
+    if (lower.contains('clean') || raw.contains('نظافة') || raw.contains('تنظيف')) {
+      newStaffing.add('Cleaners');
+    }
+    if (newStaffing.isNotEmpty) {
+      _selectedStaffing.clear();
+      _selectedStaffing.addAll(newStaffing);
+    }
+
+    // 4. Contact person detection:
+    final contactRegex = RegExp(
+        r'(?:Engr?\.?|Mr\.?|Ms\.?|Dr\.?|المهندس|المهندسة|الأستاذ|الاستاذ|دكتور|عناية|Contact:?)\s*([^\n,،:0-9]{3,25})',
+        caseSensitive: false);
+    final contactMatch = contactRegex.firstMatch(raw);
+    if (contactMatch != null) {
+      _contactController.text = contactMatch.group(1)!.trim();
+    }
+
+    // 5. Company Name detection:
+    final companyRegex = RegExp(
+        r'(?:Company|Corp|Inc|شركة|مؤسسة|مكتب|Tower|برج)\s*([^\n,،:]{3,35})',
+        caseSensitive: false);
+    final companyMatch = companyRegex.firstMatch(raw);
+    if (companyMatch != null) {
+      _companyController.text = companyMatch.group(0)!.trim();
+    } else if (_companyController.text.isEmpty) {
+      final firstLine = raw
+          .split('\n')
+          .firstWhere((l) => l.trim().isNotEmpty, orElse: () => '');
+      if (firstLine.isNotEmpty && firstLine.length <= 40) {
+        _companyController.text = firstLine.trim();
+      }
+    }
+
+    // Copy context into notes if empty
+    if (_notesController.text.isEmpty) {
+      _notesController.text = 'Raw extracted text: ${raw.replaceAll('\n', ' ').trim()}';
+    }
+
+    setState(() {});
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Parsed & auto-filled lead info from text!'),
+        backgroundColor: AppTheme.saudiEmerald,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  void _openSmartPasteDialog() {
+    final textController = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: const [
+            Icon(Icons.auto_awesome, color: AppTheme.royalGold),
+            SizedBox(width: 8),
+            Text(
+              'Smart Lead Extractor',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: AppTheme.slateNavy,
+              ),
+            ),
+          ],
+        ),
+        content: SizedBox(
+          width: 400,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Paste any raw WhatsApp message, contact card, or email text. The regex engine auto-extracts Company, Contact, Saudi Phone, Hub, and Staffing needs!',
+                style: TextStyle(fontSize: 12, color: AppTheme.textMuted),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: textController,
+                maxLines: 5,
+                decoration: InputDecoration(
+                  hintText: 'e.g. Al Faisaliah Tower, Eng. Tariq Al-Otaibi 0551234567, needs 2 tea boys and 1 cleaner in Al Olaya...',
+                  hintStyle: const TextStyle(fontSize: 12, color: AppTheme.textMuted),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel', style: TextStyle(color: AppTheme.textMuted)),
+          ),
+          ElevatedButton.icon(
+            onPressed: () {
+              final raw = textController.text;
+              if (raw.trim().isNotEmpty) {
+                _parseAndAutoFill(raw);
+              }
+              Navigator.pop(ctx);
+            },
+            icon: const Icon(Icons.bolt, size: 16),
+            label: const Text('Extract & Fill'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.saudiEmerald,
+              foregroundColor: Colors.white,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _pickDate() async {
     final now = DateTime.now();
     final picked = await showDatePicker(
@@ -73,6 +224,34 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
     if (picked != null) {
       setState(() {
         _dateAdded = picked.toIso8601String().split('T').first;
+      });
+    }
+  }
+
+  Future<void> _pickFollowUpDate() async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: now.add(const Duration(days: 1)),
+      firstDate: now,
+      lastDate: DateTime(2030),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: AppTheme.saudiEmerald,
+              onPrimary: Colors.white,
+              onSurface: AppTheme.slateNavy,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (picked != null) {
+      setState(() {
+        _followUpDate = picked.toIso8601String().split('T').first;
       });
     }
   }
@@ -121,6 +300,7 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
       status: 'New',
       notes: _notesController.text.trim(),
       dateAdded: _dateAdded,
+      followUpDate: _followUpDate,
     );
 
     final added = await HiveService.instance.addLead(newLead);
@@ -195,6 +375,56 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
                   ),
                   const SizedBox(height: 16),
                 ],
+
+                // Smart Auto-Detect & Paste Banner
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF0FDF4),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: const Color(0xFFBBF7D0)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.auto_awesome, size: 20, color: AppTheme.royalGold),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: const [
+                            Text(
+                              'Smart Text Auto-Detect',
+                              style: TextStyle(
+                                  fontSize: 12.5,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppTheme.slateNavy),
+                            ),
+                            Text(
+                              'Paste WhatsApp / SMS notes to auto-fill fields',
+                              style: TextStyle(fontSize: 11, color: AppTheme.textMuted),
+                            ),
+                          ],
+                        ),
+                      ),
+                      ElevatedButton.icon(
+                        onPressed: _openSmartPasteDialog,
+                        icon: const Icon(Icons.bolt, size: 14),
+                        label: const Text('Auto-Fill'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppTheme.saudiEmerald,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 6),
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8)),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
 
                 // Company Name
                 const Text(
@@ -384,6 +614,61 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
                   maxLines: 3,
                   decoration: const InputDecoration(
                     hintText: 'e.g. Head office floor 12, prefers morning shift, VIP tea service required',
+                  ),
+                ),
+
+                const SizedBox(height: 16),
+
+                // Follow-up Callback Schedule
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Follow-Up Callback Reminder',
+                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppTheme.slateNavy),
+                    ),
+                    if (_followUpDate != null)
+                      InkWell(
+                        onTap: () => setState(() => _followUpDate = null),
+                        child: const Text('Clear', style: TextStyle(fontSize: 12, color: Colors.red)),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                InkWell(
+                  onTap: _pickFollowUpDate,
+                  borderRadius: BorderRadius.circular(10),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: _followUpDate != null ? AppTheme.saudiEmerald : AppTheme.borderGrey,
+                        width: _followUpDate != null ? 1.5 : 1.0,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(Icons.alarm, size: 18,
+                              color: _followUpDate != null ? AppTheme.saudiEmerald : AppTheme.textMuted),
+                            const SizedBox(width: 10),
+                            Text(
+                              _followUpDate ?? 'Optional: Schedule callback date',
+                              style: TextStyle(
+                                fontSize: 13.5,
+                                fontWeight: _followUpDate != null ? FontWeight.w700 : FontWeight.w400,
+                                color: _followUpDate != null ? AppTheme.slateNavy : AppTheme.textMuted,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const Icon(Icons.arrow_drop_down, color: AppTheme.textMuted),
+                      ],
+                    ),
                   ),
                 ),
 

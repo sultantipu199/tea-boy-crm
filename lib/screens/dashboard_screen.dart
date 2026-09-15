@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../models/lead.dart';
 import '../services/hive_service.dart';
 import '../services/scraper_service.dart';
+import '../services/whatsapp_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/hub_filter_bar.dart';
 import '../widgets/lead_card.dart';
+import '../widgets/pipeline_kpi_header.dart';
 import 'add_lead_screen.dart';
 import 'lead_detail_screen.dart';
 import 'settings_screen.dart';
@@ -27,6 +30,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   static const List<String> _statuses = [
     'All',
+    '⏰ Due Follow-ups',
+    '⚡ Hot Deals (≥75%)',
     'New',
     'Contacted',
     'Interested',
@@ -169,8 +174,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
       leads = leads.where((l) => l.hub == _selectedHub).toList();
     }
 
-    // Status Filter
-    if (_selectedStatus != 'All') {
+    // Status / Alert Filter
+    if (_selectedStatus == '⏰ Due Follow-ups') {
+      leads = leads.where((l) => l.isFollowUpDue).toList();
+    } else if (_selectedStatus == '⚡ Hot Deals (≥75%)') {
+      leads = leads.where((l) => (l.aiAnalysis?.dealScore ?? 0) >= 75).toList();
+    } else if (_selectedStatus != 'All') {
       leads = leads
           .where((l) => l.status.toLowerCase() == _selectedStatus.toLowerCase())
           .toList();
@@ -194,6 +203,112 @@ class _DashboardScreenState extends State<DashboardScreen> {
     });
 
     return leads;
+  }
+
+  void _shareExecutivePipelineReport() {
+    final report = HiveService.instance.generatePipelineExecutiveBriefing();
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: const [
+            Icon(Icons.assessment_outlined, color: AppTheme.saudiEmerald),
+            SizedBox(width: 8),
+            Text(
+              'Pipeline Briefing',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: AppTheme.slateNavy,
+              ),
+            ),
+          ],
+        ),
+        content: SizedBox(
+          width: 450,
+          child: SingleChildScrollView(
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF8FAFC),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: AppTheme.borderGrey),
+              ),
+              child: SelectableText(
+                report,
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontFamily: 'monospace',
+                  color: AppTheme.slateNavy,
+                  height: 1.4,
+                ),
+              ),
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Close', style: TextStyle(color: AppTheme.textMuted)),
+          ),
+          OutlinedButton.icon(
+            onPressed: () async {
+              await Clipboard.setData(ClipboardData(text: report));
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Pipeline Briefing copied to clipboard!'),
+                    backgroundColor: AppTheme.saudiEmerald,
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              }
+              Navigator.pop(ctx);
+            },
+            icon: const Icon(Icons.copy, size: 16),
+            label: const Text('Copy'),
+          ),
+          ElevatedButton.icon(
+            onPressed: () async {
+              await Clipboard.setData(ClipboardData(text: report));
+              Navigator.pop(ctx);
+              await WhatsAppService.launchWhatsApp(phone: '', message: report);
+            },
+            icon: const Icon(Icons.send, size: 16),
+            label: const Text('Share WhatsApp'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF006C4F),
+              foregroundColor: Colors.white,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _exportLeadsCsv() async {
+    final csv = HiveService.instance.exportToCsv();
+    await Clipboard.setData(ClipboardData(text: csv));
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Row(
+            children: [
+              Icon(Icons.table_chart, color: Colors.white, size: 18),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text('All leads exported to CSV and copied to clipboard! Ready to paste into Excel.'),
+              ),
+            ],
+          ),
+          backgroundColor: AppTheme.slateNavy,
+          behavior: SnackBarBehavior.floating,
+          duration: Duration(seconds: 4),
+        ),
+      );
+    }
   }
 
   @override
@@ -238,6 +353,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ),
         actions: [
           IconButton(
+            tooltip: 'Share Pipeline Report via WhatsApp',
+            icon: const Icon(Icons.assessment_outlined),
+            onPressed: _shareExecutivePipelineReport,
+          ),
+          IconButton(
+            tooltip: 'Export Leads to CSV / Excel',
+            icon: const Icon(Icons.table_chart_outlined),
+            onPressed: _exportLeadsCsv,
+          ),
+          IconButton(
             tooltip: 'Run Scraper / Import',
             icon: _isScraping
                 ? const SizedBox(
@@ -270,6 +395,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
             constraints: const BoxConstraints(maxWidth: 1000),
             child: Column(
           children: [
+            // Executive Pipeline KPI Header
+            PipelineKpiHeader(leads: HiveService.instance.getAllLeads()),
+
             // Search Bar & Sort Toggle Row
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
@@ -429,6 +557,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         final lead = leads[index];
                         return LeadCard(
                           lead: lead,
+                          onStatusChanged: (newStatus) async {
+                            await HiveService.instance
+                                .updateLeadStatus(lead.id, newStatus);
+                            _refresh();
+                          },
                           onTap: () async {
                             await Navigator.push(
                               context,
