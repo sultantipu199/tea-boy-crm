@@ -33,8 +33,7 @@ migrate_working_dir/
 # Android related
 **/android/**/gradle-wrapper.jar.sha256
 **/android/captures/
-**/android/gradle/
-!**/android/gradle/wrapper/
+**/android/.gradle/
 **/android/local.properties
 **/android/app/build/
 **/android/app/upload-keystore.jks
