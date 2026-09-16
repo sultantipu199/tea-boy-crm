@@ -276,18 +276,18 @@ class StorageService {
         'Company Name,Contact Person,Phone,Zone Cluster,Staffing Requirements,Status,Date Added,Contacted At,Follow Up Date,Deal Score,Monthly SAR Est,Notes');
 
     for (final l in leads) {
-      final comp = '"${l.companyName.replaceAll('"', '""')}"';
-      final contact = '"${l.contactPerson.replaceAll('"', '""')}"';
-      final phone = '"${l.saudiMobile}"';
-      final hub = '"${l.hub}"';
-      final reqs = '"${l.staffingRequirements.join('; ')}"';
-      final status = '"${l.status}"';
-      final dateAdded = '"${l.dateAdded}"';
-      final contactedAt = '"${l.contactedAt ?? ''}"';
-      final followUp = '"${l.followUpDate ?? ''}"';
+      final comp = '"' + l.companyName.replaceAll('"', '""') + '"';
+      final contact = '"' + l.contactPerson.replaceAll('"', '""') + '"';
+      final phone = '"' + l.saudiMobile + '"';
+      final hub = '"' + l.hub + '"';
+      final reqs = '"' + l.staffingRequirements.join('; ') + '"';
+      final status = '"' + l.status + '"';
+      final dateAdded = '"' + l.dateAdded + '"';
+      final contactedAt = '"' + (l.contactedAt ?? '') + '"';
+      final followUp = '"' + (l.followUpDate ?? '') + '"';
       final score = l.aiAnalysis?.dealScore ?? l.intentScore;
       final estMonthly = l.estimatedMonthlyValue.toStringAsFixed(0);
-      final notes = '"${l.notes.replaceAll('"', '""').replaceAll('\n', ' ')}"';
+      final notes = '"' + l.notes.replaceAll('"', '""').replaceAll('\n', ' ') + '"';
 
       buffer.writeln(
           '$comp,$contact,$phone,$hub,$reqs,$status,$dateAdded,$contactedAt,$followUp,$score,$estMonthly,$notes');
