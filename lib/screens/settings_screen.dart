@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/lead.dart';
 import '../services/gemini_service.dart';
-import '../services/hive_service.dart';
+import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -20,7 +20,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   void initState() {
     super.initState();
-    final savedKey = HiveService.instance.getApiKey() ?? '';
+    final savedKey = StorageService.instance.getApiKey() ?? '';
     _apiKeyController.text = savedKey;
   }
 
@@ -32,7 +32,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _saveApiKey() async {
     final key = _apiKeyController.text.trim();
-    await HiveService.instance.saveApiKey(key);
+    await StorageService.instance.saveApiKey(key);
     GeminiService.customApiKey = key.isEmpty ? null : key;
 
     if (mounted) {
@@ -113,7 +113,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
 
     if (confirm == true) {
-      await HiveService.instance.seedInitialCorporateLeads();
+      await StorageService.instance.seedInitialCorporateLeads();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -152,12 +152,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
 
     if (confirm == true) {
-      await HiveService.instance.leadsBox.clear();
+      final box = StorageService.instance.leadsBox;
+      await box.clear();
+      StorageService.instance.revision.value++;
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('All leads cleared from local storage.'),
-            backgroundColor: AppTheme.statusDisqualified,
+            backgroundColor: AppTheme.slateNavy,
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -168,9 +170,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final allLeads = HiveService.instance.getAllLeads();
+    final allLeads = StorageService.instance.getAllLeads();
+    final blacklisted = StorageService.instance.getAllBlacklisted();
 
-    return Scaffold(
+    return PopScope(
+      canPop: true,
+      child: Scaffold(
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
         title: const Text(
@@ -356,6 +361,96 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
               const SizedBox(height: 16),
 
+              // Wrong-Number Guard & Local Blacklist Box
+              Card(
+                elevation: 1,
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: const [
+                              Icon(Icons.gpp_bad_outlined, color: AppTheme.statusDisqualified, size: 20),
+                              SizedBox(width: 8),
+                              Text(
+                                'Wrong-Number Guard Blacklist',
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppTheme.slateNavy,
+                                ),
+                              ),
+                            ],
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFEE2E2),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Text(
+                              '${blacklisted.length} Blacklisted',
+                              style: const TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFFDC2626),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      const Text(
+                        'Persistent Hive Box: \'blacklist_contacts\'. Numbers flagged as wrong contact or non-decision makers are permanently excluded from scraping and outreach.',
+                        style: TextStyle(fontSize: 11.5, color: AppTheme.textMuted, height: 1.4),
+                      ),
+                      if (blacklisted.isNotEmpty) ...[
+                        const SizedBox(height: 12),
+                        Container(
+                          constraints: const BoxConstraints(maxHeight: 160),
+                          child: ListView.separated(
+                            shrinkWrap: true,
+                            itemCount: blacklisted.length,
+                            separatorBuilder: (_, __) => const Divider(height: 8),
+                            itemBuilder: (ctx, i) {
+                              final b = blacklisted[i];
+                              return Row(
+                                children: [
+                                  const Icon(Icons.block, size: 14, color: AppTheme.statusDisqualified),
+                                  const SizedBox(width: 6),
+                                  Expanded(
+                                    child: Text(
+                                      '${b['phone']} - ${b['reason'] ?? 'Wrong Contact'}',
+                                      style: const TextStyle(fontSize: 11.5, color: AppTheme.slateNavy),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.delete_outline, size: 16, color: Colors.grey),
+                                    tooltip: 'Remove from blacklist',
+                                    onPressed: () async {
+                                      await StorageService.instance.removeFromBlacklist(b['phone'].toString());
+                                      setState(() {});
+                                    },
+                                  ),
+                                ],
+                              );
+                            },
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 16),
+
               // Enterprise Specs & Hardening Summary
               Card(
                 elevation: 1,
@@ -398,6 +493,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
         ),
       ),
+    ),
     );
   }
 

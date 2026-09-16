@@ -1,19 +1,12 @@
 import 'package:flutter/material.dart';
+import '../models/zones.dart';
 import '../theme/app_theme.dart';
 
 class HubFilterBar extends StatelessWidget {
   final String selectedHub;
   final Function(String hub) onHubSelected;
 
-  static const List<String> hubs = [
-    'All',
-    'KAFD',
-    'Al Olaya',
-    'King Fahd Rd',
-    'Al Malqa',
-    'Digital City',
-    'Business Gate',
-  ];
+  static List<String> get hubs => ['All', ...RiyadhZones.allClusterNames];
 
   const HubFilterBar({
     super.key,
@@ -23,15 +16,17 @@ class HubFilterBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final list = hubs;
+
     return SizedBox(
       height: 44,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: hubs.length,
+        itemCount: list.length,
         separatorBuilder: (_, __) => const SizedBox(width: 8),
         itemBuilder: (context, index) {
-          final hub = hubs[index];
+          final hub = list[index];
           final isSelected = hub == selectedHub;
 
           return ChoiceChip(

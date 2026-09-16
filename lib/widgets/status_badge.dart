@@ -12,6 +12,8 @@ class StatusBadge extends StatelessWidget {
         return AppTheme.statusNew;
       case 'contacted':
         return AppTheme.statusContacted;
+      case 'analyzed':
+        return AppTheme.royalGold;
       case 'interested':
         return AppTheme.statusInterested;
       case 'closed':
@@ -26,6 +28,10 @@ class StatusBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = _getStatusColor();
+    final displayStatus = status.isEmpty
+        ? 'New'
+        : status[0].toUpperCase() + status.substring(1).toLowerCase();
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
@@ -46,7 +52,7 @@ class StatusBadge extends StatelessWidget {
           ),
           const SizedBox(width: 6),
           Text(
-            status,
+            displayStatus,
             style: TextStyle(
               color: color,
               fontSize: 11,

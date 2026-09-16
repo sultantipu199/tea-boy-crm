@@ -10,17 +10,16 @@ class PipelineKpiHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final totalLeads = leads.length;
-    final hotDeals = leads.where((l) => (l.aiAnalysis?.dealScore ?? 0) >= 75).length;
-    final closedDeals = leads.where((l) => l.status.toLowerCase() == 'closed').length;
+    final hotDeals = leads.where((l) => (l.aiAnalysis?.dealScore ?? l.intentScore) >= 75).length;
+    final closedDeals = leads.where((l) => l.isClosed).length;
 
-    // Estimate monthly pipeline volume (approx 4,000 SAR per required staff member)
-    int totalStaffCount = 0;
+    // Estimate monthly pipeline volume
+    double totalMonthlyVal = 0.0;
     for (final l in leads) {
-      if (l.status.toLowerCase() != 'disqualified') {
-        totalStaffCount += l.staffingRequirements.length;
+      if (!l.isDisqualified) {
+        totalMonthlyVal += l.estimatedMonthlyValue;
       }
     }
-    final int estimatedSarMonthly = totalStaffCount * 3800;
 
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
@@ -40,7 +39,7 @@ class PipelineKpiHeader extends StatelessWidget {
           // Hot AI Deals KPI
           Expanded(
             child: _buildKpiCard(
-              title: 'Hot AI Deals',
+              title: 'Hot Hotspots',
               value: '$hotDeals',
               subtitle: 'Score ≥ 75%',
               icon: Icons.auto_awesome,
@@ -52,7 +51,7 @@ class PipelineKpiHeader extends StatelessWidget {
           Expanded(
             child: _buildKpiCard(
               title: 'Monthly Volume',
-              value: '${(estimatedSarMonthly / 1000).toStringAsFixed(0)}k SAR',
+              value: '${(totalMonthlyVal / 1000).toStringAsFixed(0)}k SAR',
               subtitle: 'Est. Contracts',
               icon: Icons.attach_money,
               accentColor: AppTheme.slateNavy,

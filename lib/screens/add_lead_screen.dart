@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/lead.dart';
-import '../services/hive_service.dart';
+import '../models/zones.dart';
+import '../services/storage_service.dart';
 import '../services/whatsapp_service.dart';
 import '../theme/app_theme.dart';
 
@@ -19,21 +20,14 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _notesController = TextEditingController();
 
-  String _selectedHub = 'KAFD';
+  String _selectedHub = RiyadhZones.allClusterNames.first;
   final List<String> _selectedStaffing = ['Tea Boy'];
   String _dateAdded = DateTime.now().toIso8601String().split('T').first;
   String? _followUpDate;
   bool _isSaving = false;
   String? _duplicateErrorMessage;
 
-  static const List<String> _hubs = [
-    'KAFD',
-    'Al Olaya',
-    'King Fahd Rd',
-    'Al Malqa',
-    'Digital City',
-    'Business Gate',
-  ];
+  static List<String> get _hubs => RiyadhZones.allClusterNames;
 
   static const List<String> _availableStaffing = [
     'Tea Boy',
@@ -277,8 +271,17 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
     final company = _companyController.text.trim();
     final phone = _phoneController.text.trim();
 
+    // 0. Check Blacklist
+    if (StorageService.instance.isBlacklisted(phone)) {
+      setState(() {
+        _duplicateErrorMessage =
+            'Blacklist Guard: The number "${Lead.sanitizePhone(phone)}" is permanently archived in blacklist_contacts (Wrong Number / Excluded) and cannot be added.';
+      });
+      return;
+    }
+
     // 1. Deduplication constraint check
-    final exists = HiveService.instance.leadExists(company, phone);
+    final exists = StorageService.instance.leadExists(company, phone);
     if (exists) {
       setState(() {
         _duplicateErrorMessage =
@@ -297,13 +300,13 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
       saudiMobile: phone,
       hub: _selectedHub,
       staffingRequirements: List.from(_selectedStaffing),
-      status: 'New',
+      status: 'new',
       notes: _notesController.text.trim(),
       dateAdded: _dateAdded,
       followUpDate: _followUpDate,
     );
 
-    final added = await HiveService.instance.addLead(newLead);
+    final added = await StorageService.instance.addLead(newLead);
 
     setState(() => _isSaving = false);
 
@@ -326,7 +329,9 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return PopScope(
+      canPop: true,
+      child: Scaffold(
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
         title: const Text(
@@ -704,6 +709,7 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
           ),
         ),
       ),
+    ),
     );
   }
 }

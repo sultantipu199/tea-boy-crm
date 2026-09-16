@@ -1,51 +1,83 @@
-# TEA BOY B2B CRM — Riyadh Corporate Staffing
+# TEA BOY B2B CRM — Greater Riyadh Corporate Staffing
 
-An enterprise-grade Android B2B Staffing CRM Application built in Flutter, specifically tailored for corporate offices and commercial towers across **Riyadh, Saudi Arabia** (**KAFD**, **Al Olaya**, **King Fahd Rd**, **Al Malqa**, **Digital City**, and **Business Gate**). 
-
-The CRM manages the B2B pipeline for supplying specialized workplace staff:
-- **Tea Boys** (VIP Hospitality & Arabic/English etiquette)
-- **Pantry Staff** (Corporate kitchen management & supply replenishment)
-- **Professional Office Cleaners** (Medical and enterprise-grade hygiene)
+An enterprise-grade, private Android B2B Staffing CRM Application built in Flutter targeting corporate offices, regional headquarters (RHQ), consultancies, and co-working floors across Greater Riyadh for supplying dedicated cleaners, pantry staff, and tea boys.
 
 ---
 
-## Key Engineered Systems
+## Technical Blueprint & Unified Architecture
 
-### 1. Android OS & Gradle Hardening (Zero-Fail Build)
-- **Target OS Compatibility**: Engineered and tested for Android 11 through Android 15.
-- **Gradle 8.5+ Architecture**: Hardened namespace `com.teaboy.crm`, Java 17 compatibility.
-- **Zero-Secret Release Signing**: `buildTypes { release { signingConfig signingConfigs.debug; minifyEnabled false; shrinkResources false } }` generates a cryptographically signed, installable APK out of the box in CI/CD without requiring manual GitHub Secrets.
-- **Intent & Permission Hardening**: AndroidManifest includes `<uses-permission android:name="android.permission.INTERNET"/>`, `ACCESS_NETWORK_STATE`, and comprehensive `<queries>` for `com.whatsapp`, `com.whatsapp.w4b` (WhatsApp Business), and `https` URI schemes.
-- **Window Resize Inset**: `windowSoftInputMode="adjustResize"` combined with Flutter `SafeArea` and `SingleChildScrollView` prevents soft keyboard clipping on any device screen ratio.
+### 1. High-Growth Riyadh Hotspots & 5X Expanded Radius (`lib/models/zones.dart`)
+- **Hotspot Boom Strip**: Al Narjis Commercial, Al Yasmin, Al Khuzama, New Murabba corridor, King Salman Road Business Strip, Roshn Front Business Zone.
+- **Core Corporate Hubs**: KAFD Phase 1 & 2, Al Olaya, King Fahd Rd, Digital City, Business Gate, Al Malqa Office Blocks.
+- **Tech & Logistics Corridors**: Granada Business Park, Al Yarmouk, King Khalid Int'l Airport Logistics Zone.
+- **Industrial HQs**: Al Sulay Industrial Zone, Riyadh Second Industrial City (Head Offices & Warehouses).
+- **Target Sectors**: Newly fitted-out physical corporate offices, regional headquarters (RHQ), consultancies, and co-working floors needing on-site tea boys and cleaners.
 
-### 2. Enterprise Offline Storage & Deduplication (Hive Singleton)
-- **Deduplication Constraint**: Primary key is a composite hash `companyName_sanitizedPhone` (normalized lowercase & whitespace-trimmed). Re-scraping the Riyadh market or importing bulk leads will check this key and **never duplicate or overwrite** existing client relationships.
-- **Timestamp Tracking Constraint**: Every lead records `date_added` formatted as `YYYY-MM-DD`, enabling chronological pipeline sorting (newest/oldest) and date-filtered discovery.
-- **Offline Reliability**: 100% functional without an active internet connection.
+### 2. Daily Automated Cloud Scraper Pipeline (`.github/workflows/daily_scraper.yml` & `scripts/scraper.py`)
+- **Execution**: Daily automated cron job running at 03:00 UTC (06:00 AM Riyadh Time) with `workflow_dispatch` manual trigger.
+- **Ingestion Conditions**:
+  - Scrapes fresh commercial registrations and newly claimed listings from the last 24-72 hours.
+  - Strict Deduplication: Uses composite primary key `(companyName_sanitizedPhone)`.
+  - Cross-references against `blacklist_contacts` Hive box; skips blacklisted or already-contacted entities.
+  - Appends structured fields: `id`, `company_name`, `contact_person`, `phone`, `zone_cluster`, `intent_score`, `date_added (YYYY-MM-DD)`, `status ('new')`.
 
-### 3. Resilient Multilingual WhatsApp Dispatcher
-- **Saudi Mobile Sanitation**: Regex cleanser strictly normalizes phone inputs (`05xxxxxxxx`, `+9665xxxxxxxx`, spaced numbers) into standard `9665xxxxxxxx` format.
-- **Multi-Scheme Invocation**: Tries primary native scheme `whatsapp://send?phone=...&text=...` with automatic fallback to `https://wa.me/9665xxxxxxxx?text=...`.
-- **Unicode BiDi Isolation**: Embeds mixed Arabic/English text using directional tokens (`\u202A`, `\u202B`, `\u202C`, `\u200E`, `\u200F`), preventing visual scrambling of Arabic corporate greetings containing English acronyms (e.g. *KAFD*, *Tea Boy*, *VIP*).
-- **1-Tap Dispatch**: Copies message to system clipboard, fires haptic feedback (`HapticFeedback.lightImpact()`), launches WhatsApp, and displays an animated confirmation SnackBar.
+### 3. Instant Status-Shift State Machine (`lib/services/storage_service.dart` & `lib/widgets/lead_card.dart`)
+- **Status Lifecycle Levels**: `'new'` | `'contacted'` | `'analyzed'` | `'interested'` | `'closed'` | `'disqualified'`.
+- **1-Tap WhatsApp Trigger**: Clicking the WhatsApp button:
+  - Launches native WhatsApp intent with pre-drafted pitch.
+  - Instantly demotes lead status from `'new'` to `'contacted'` without requiring manual confirmation.
+  - Records `'contacted_at'` timestamp (`DateTime.now()`) and saves to Hive DB.
+  - Triggers light haptic feedback and displays a brief confirmation SnackBar.
+  - Removes the card immediately from the active `'New'` list view in real time via reactive `revision` notifier.
 
-### 4. Resilient AI Deal Forecasting Engine (Gemini 1.5 Flash)
-- **JSON Schema Mode**: Direct REST integration to `generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent` with `response_mime_type: "application/json"`.
-- **Fault-Tolerant Retries**: 2-stage retry mechanism with exponential backoff on intermittent timeouts (15-second ceiling).
-- **Markdown Sanitation**: Strips accidental code fences (````json ... ````) prior to JSON decoding.
-- **Structured Deal Output**: Produces `sentiment`, `pain_points`, `recommended_action`, `follow_up_message` (custom bilingual pitch), `next_follow_up_date`, and `deal_score` (0-100%).
-- **Heuristic Fallback**: If an API key is missing or offline, a local scoring engine executes deterministically, guaranteeing zero application crashes.
+### 4. Wrong-Number Guard & Local Blacklist Engine (`lib/services/gemini_service.dart` & `storage_service.dart`)
+- **Persistent Hive Box**: `'blacklist_contacts'`.
+- **Trigger Detection**: Detects wrong number or misidentified recipient replies ("wrong number", "not [Name]", "غلطان", "الرقم خطأ", "لست الأستاذ", "لست المسؤول", "مو أنا", etc.).
+- **Blacklist Protocol**:
+  - Automatically marks lead status as `'disqualified'`.
+  - Permanently stores the phone number in `'blacklist_contacts'` so it is never scraped or contacted again.
+  - Generates zero-pitch polite apology exit message:
+    `اعتذر منك بشدة على الإزعاج، سيتم تعديل الرقم وحذفه فوراً من سجلاتنا. أتمنى لك يوماً سعيداً.`
+  - 1-tap "Send Apology & Archive" button with no further follow-up allowed.
 
-### 5. Mobile-First Riyadh Hub CRM Dashboard
-- **Design Aesthetic**: Riyadh Corporate Enterprise palette — Saudi Emerald (`#006C4F`), Royal Desert Gold (`#D4AF37`), Slate Navy (`#0F172A`), and Pristine Off-White cards.
-- **Horizontal Hub Filter Bar**: Quick filter leads by Riyadh corporate clusters: `All`, `KAFD`, `Al Olaya`, `King Fahd Rd`, `Al Malqa`, `Digital City`, `Business Gate`.
-- **Status Badges**: Color-coded lifecycle badges (`New`, `Contacted`, `Interested`, `Closed`, `Disqualified`).
+### 5. AI Forecasting Engine (Gemini 1.5 Flash - `lib/services/gemini_service.dart`)
+- **Auto-Trigger on Paste**: Automatically analyzes pasted client replies without requiring a manual "Submit" button.
+- **Markdown Sanitization**: Strips backticks before JSON parsing.
+- **Strict Schema Mode**:
+  ```json
+  {
+    "sentiment": "Interested | Objection: Price | Objection: Vendor | Wrong Contact | Postponed",
+    "is_wrong_contact": false,
+    "pain_points": "string detailing client pain points",
+    "recommended_action": "string with specific next step in Riyadh",
+    "follow_up_message": "string (culturally refined Arabic WhatsApp pitch)",
+    "next_follow_up_date": "YYYY-MM-DD",
+    "deal_score": 85
+  }
+  ```
+- **Field Locking**: Automatically locks input field after analysis; displays copyable follow-up script with a small edit icon to unlock if user explicitly needs to update.
 
-### 6. Zero-Fail GitHub Actions CI/CD Pipeline
-- Workflow located at `.github/workflows/build_apk.yml`.
-- Runner: `ubuntu-latest`.
-- Configured with Java 17 (Temurin), Flutter 3.22.x with caching, automated `chmod +x android/gradlew`, and release APK artifact publishing (7-day retention).
-- **Zero GitHub Secrets needed**.
+### 6. Mobile UI Architecture (`lib/screens/dashboard_screen.dart`)
+- **Sticky Top Bar**: `🟢 Today's Fresh Offices: X | Top Cluster: Al Narjis / Roshn`.
+- **Segmented Tabs**:
+  - `🟢 New (Unreached)`
+  - `🟡 Contacted / Pending`
+  - `🔴 Disqualified / Archive`
+- **Area Quick-Filter Chips**: `[All, Hotspots (Narjis/Roshn), Central (KAFD/Olaya), North Hubs, Industrial/Logistics]`.
+- **Android 14/15 Gesture Support**: `PopScope`, `SafeArea`, `SingleChildScrollView`, and `resizeToAvoidBottomInset: true`.
+
+### 7. Zero-Fail Android Gradle & CI/CD Pipeline
+- **`android/app/build.gradle`**:
+  - Explicit namespace `com.teaboy.crm` compatible with Gradle 8+.
+  - Release signed with debug keystore for seamless installation across Android 11 to 15 without parsing errors.
+- **`android/app/src/main/AndroidManifest.xml`**:
+  - Permissions: `INTERNET`, `ACCESS_NETWORK_STATE`.
+  - Intent queries for `com.whatsapp`, `com.whatsapp.w4b`, and `https`.
+- **GitHub Actions Workflow** (`.github/workflows/build_apk.yml`):
+  - Runner: `ubuntu-latest` | Java 17 (Temurin) | Flutter 3.22.x with cache.
+  - Automated unit test suite validation.
+  - Release APK upload artifact with 7-day retention.
+- **ZERO Manual GitHub Secrets Configuration**: 100% self-contained.
 
 ---
 
@@ -55,7 +87,8 @@ The CRM manages the B2B pipeline for supplying specialized workplace staff:
 .
 ├── .github/
 │   └── workflows/
-│       └── build_apk.yml                     # Zero-secret GitHub Actions CI/CD pipeline
+│       ├── build_apk.yml                     # Zero-secret release APK CI/CD pipeline
+│       └── daily_scraper.yml                 # Daily 03:00 UTC cloud scraper pipeline
 ├── android/
 │   ├── app/
 │   │   ├── build.gradle                      # Gradle 8.5 config, namespace, debug signing
@@ -63,53 +96,40 @@ The CRM manages the B2B pipeline for supplying specialized workplace staff:
 │   │       ├── AndroidManifest.xml           # Permissions, <queries>, adjustResize
 │   │       ├── kotlin/com/teaboy/crm/
 │   │       │   └── MainActivity.kt           # FlutterActivity
-│   │       └── res/                          # Launch backgrounds & styles
-│   ├── gradle/wrapper/
-│   │   ├── gradle-wrapper.properties         # Gradle 8.5 distribution URL
-│   │   └── gradle-wrapper.jar                # Binary Gradle wrapper JAR
-│   ├── build.gradle                          # Root Gradle build script
-│   ├── settings.gradle                       # Plugin management & loaders
-│   ├── gradle.properties                     # JVM arguments & AndroidX flags
-│   ├── gradlew                               # Unix wrapper script
-│   └── gradlew.bat                           # Windows wrapper script
+│   │       └── res/                          # Launch backgrounds & icons
+│   └── ...
+├── data/
+│   └── scraped_leads.json                    # Daily ingested corporate office listings
 ├── lib/
-│   ├── main.dart                             # App entry point & Hive initialization
+│   ├── main.dart                             # App entry point & Hive storage bootstrap
 │   ├── models/
-│   │   ├── lead.dart                         # Lead model, composite primary key, date_added
-│   │   └── ai_analysis.dart                  # Deal forecast & sentiment data structure
+│   │   ├── zones.dart                        # 5X expanded Riyadh clusters & categories
+│   │   ├── lead.dart                         # Lead model, composite primary key, timestamps
+│   │   └── ai_analysis.dart                  # Gemini 1.5 Flash structured forecast model
 │   ├── services/
-│   │   ├── hive_service.dart                 # Hive DB singleton & deduplication engine
-│   │   ├── whatsapp_service.dart             # Multilingual WhatsApp dispatcher & BiDi engine
-│   │   ├── gemini_service.dart               # Gemini 1.5 Flash REST client with backoff
-│   │   └── scraper_service.dart              # Riyadh office lead scraper / generator
+│   │   ├── storage_service.dart              # Offline Hive DB singleton, status state machine, blacklist
+│   │   ├── hive_service.dart                 # Backward-compatible proxy to StorageService
+│   │   ├── gemini_service.dart               # Gemini 1.5 Flash client & wrong-number detection
+│   │   ├── scraper_service.dart              # In-app Greater Riyadh market scraper engine
+│   │   └── whatsapp_service.dart             # Multilingual WhatsApp dispatcher & BiDi isolation
 │   ├── theme/
-│   │   └── app_theme.dart                    # Saudi corporate color system & typography
+│   │   └── app_theme.dart                    # Saudi Emerald, Royal Gold & Slate Navy theme
 │   ├── widgets/
-│   │   ├── hub_filter_bar.dart               # Horizontal Riyadh hub selector
-│   │   ├── lead_card.dart                    # Interactive lead card with 1-tap dispatch
-│   │   ├── status_badge.dart                 # Color-coded lifecycle status badge
-│   │   └── ai_score_badge.dart               # Deal score visual badge
+│   │   ├── lead_card.dart                    # 1-tap WhatsApp trigger & instant status shift
+│   │   ├── pipeline_kpi_header.dart          # Executive KPI summary cards
+│   │   ├── hub_filter_bar.dart               # Horizontal Riyadh cluster filter bar
+│   │   ├── status_badge.dart                 # Lifecycle status pill badge
+│   │   ├── ai_score_badge.dart               # Deal probability score indicator
+│   │   └── quotation_calculator_dialog.dart  # Instant SAR formal price quotation with 15% VAT
 │   └── screens/
-│       ├── dashboard_screen.dart             # Main CRM dashboard, search, filters, scraper
-│       ├── lead_detail_screen.dart           # Lead detail, AI forecasting, pitch dispatcher
-│       ├── add_lead_screen.dart              # Lead creation & deduplication validation
-│       └── settings_screen.dart              # Gemini key configuration & database reset
+│       ├── dashboard_screen.dart             # Sticky top bar, 3 segmented tabs, area quick-filters
+│       ├── lead_detail_screen.dart           # AI forecasting, wrong-number guard, pitch selector
+│       ├── add_lead_screen.dart              # Lead registration, smart auto-fill & blacklist check
+│       └── settings_screen.dart              # API key config, blacklist manager & DB seeding
+├── scripts/
+│   └── scraper.py                            # Cloud scraper pipeline script for Greater Riyadh
+├── test/
+│   └── crm_test.dart                         # Core unit tests for models, zones, deduplication
 ├── pubspec.yaml                              # Flutter dependencies & metadata
-└── .gitignore                                # Git ignore rules for Flutter & Android
+└── README.md
 ```
-
----
-
-## How to Run & Build
-
-### Local Execution
-```bash
-flutter pub get
-flutter run
-```
-
-### Build Signed Release APK
-```bash
-flutter build apk --release
-```
-The installable APK will be generated at `build/app/outputs/flutter-apk/app-release.apk`.

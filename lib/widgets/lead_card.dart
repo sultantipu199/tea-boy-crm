@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../models/lead.dart';
-import '../services/hive_service.dart';
+import '../services/storage_service.dart';
 import '../services/whatsapp_service.dart';
 import '../theme/app_theme.dart';
 import 'ai_score_badge.dart';
@@ -19,8 +20,74 @@ class LeadCard extends StatelessWidget {
     this.onStatusChanged,
   });
 
+  Future<void> _handleWhatsAppTrigger(BuildContext context) async {
+    // 1. Light haptic feedback
+    await HapticFeedback.lightImpact();
+
+    // 2. Determine message copy (use AI personalized script if generated, otherwise VIP corporate pitch)
+    final message = (lead.aiAnalysis?.followUpMessage.isNotEmpty ?? false)
+        ? lead.aiAnalysis!.followUpMessage
+        : WhatsAppService.generatePitchTemplate(
+            companyName: lead.companyName,
+            contactPerson: lead.contactPerson,
+            hub: lead.hub,
+            staffing: lead.staffingRequirements,
+          );
+
+    // 3. Copy script to clipboard
+    await Clipboard.setData(ClipboardData(text: message));
+
+    // 4. Instant Status-Shift State Machine:
+    // If status is 'new', instantly demote to 'contacted', record contacted_at timestamp
+    bool shifted = false;
+    if (lead.isNew) {
+      await StorageService.instance.markLeadContacted(lead.id);
+      shifted = true;
+      if (onStatusChanged != null) {
+        onStatusChanged!('contacted');
+      }
+    }
+
+    // 5. Launch native WhatsApp intent
+    final launched = await WhatsAppService.launchWhatsApp(
+      phone: lead.saudiMobile,
+      message: message,
+    );
+
+    // 6. Brief confirmation SnackBar
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: const Color(0xFF006C4F),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          content: Row(
+            children: [
+              const Icon(Icons.check_circle, color: Colors.white, size: 20),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  shifted
+                    ? 'Shifted to Contacted & WhatsApp launched for ${lead.companyName}'
+                    : (launched
+                        ? 'WhatsApp launched for ${lead.companyName}'
+                        : 'Pitch copied to clipboard'),
+                  style: const TextStyle(color: Colors.white, fontSize: 13),
+                ),
+              ),
+            ],
+          ),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final isDisqualified = lead.isDisqualified;
+
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       child: InkWell(
@@ -31,7 +98,7 @@ class LeadCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header: Company Name + Status Badge + Quick Status Menu
+              // Header: Company Name + Monthly SAR Value + Quick Status Menu
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -44,10 +111,15 @@ class LeadCard extends StatelessWidget {
                             Expanded(
                               child: Text(
                                 lead.companyName,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w700,
-                                  color: AppTheme.textDark,
+                                  color: isDisqualified
+                                      ? AppTheme.textMuted
+                                      : AppTheme.textDark,
+                                  decoration: isDisqualified
+                                      ? TextDecoration.lineThrough
+                                      : null,
                                 ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
@@ -57,15 +129,19 @@ class LeadCard extends StatelessWidget {
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 6, vertical: 2),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFE6F4EA),
+                                color: isDisqualified
+                                    ? Colors.grey.shade100
+                                    : const Color(0xFFE6F4EA),
                                 borderRadius: BorderRadius.circular(6),
                               ),
                               child: Text(
                                 '${lead.estimatedMonthlyValue.toStringAsFixed(0)} SAR/mo',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 10.5,
                                   fontWeight: FontWeight.w700,
-                                  color: AppTheme.saudiEmerald,
+                                  color: isDisqualified
+                                      ? AppTheme.textMuted
+                                      : AppTheme.saudiEmerald,
                                 ),
                               ),
                             ),
@@ -120,7 +196,8 @@ class LeadCard extends StatelessWidget {
                                   color: const Color(0xFFFEE2E2),
                                   borderRadius: BorderRadius.circular(4),
                                   border: Border.all(
-                                      color: const Color(0xFFF87171), width: 0.5),
+                                      color: const Color(0xFFF87171),
+                                      width: 0.5),
                                 ),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
@@ -141,14 +218,6 @@ class LeadCard extends StatelessWidget {
                                   ],
                                 ),
                               ),
-                            ] else if (lead.followUpDate != null &&
-                                lead.followUpDate!.isNotEmpty) ...[
-                              const SizedBox(width: 8),
-                              Text(
-                                'Due: ${lead.followUpDate}',
-                                style: const TextStyle(
-                                    fontSize: 10.5, color: AppTheme.textMuted),
-                              ),
                             ],
                           ],
                         ),
@@ -163,16 +232,17 @@ class LeadCard extends StatelessWidget {
                       if (onStatusChanged != null) {
                         onStatusChanged!(newStatus);
                       } else {
-                        await HiveService.instance
+                        await StorageService.instance
                             .updateLeadStatus(lead.id, newStatus);
                       }
                     },
                     itemBuilder: (context) => [
-                      'New',
-                      'Contacted',
-                      'Interested',
-                      'Closed',
-                      'Disqualified'
+                      'new',
+                      'contacted',
+                      'analyzed',
+                      'interested',
+                      'closed',
+                      'disqualified'
                     ].map((s) => PopupMenuItem(
                           value: s,
                           child: Row(
@@ -190,9 +260,9 @@ class LeadCard extends StatelessWidget {
                 ],
               ),
 
-              const SizedBox(height: 12),
+              const SizedBox(height: 10),
 
-              // Contact Information & AI Score
+              // Contact Information & AI / Intent Score
               Row(
                 children: [
                   const Icon(
@@ -213,13 +283,14 @@ class LeadCard extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  if (lead.aiAnalysis != null) ...[
-                    AiScoreBadge(score: lead.aiAnalysis!.dealScore),
-                  ],
+                  if (lead.aiAnalysis != null)
+                    AiScoreBadge(score: lead.aiAnalysis!.dealScore)
+                  else
+                    AiScoreBadge(score: lead.intentScore),
                 ],
               ),
 
-              const SizedBox(height: 10),
+              const SizedBox(height: 8),
 
               // Staffing Requirements Chips
               Wrap(
@@ -261,10 +332,28 @@ class LeadCard extends StatelessWidget {
                 }).toList(),
               ),
 
-              const Divider(
-                  height: 20, thickness: 0.8, color: AppTheme.borderGrey),
+              if (lead.contactedAt != null && lead.contactedAt!.isNotEmpty) ...[
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    const Icon(Icons.check_circle_outline,
+                        size: 12, color: AppTheme.statusContacted),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Contacted on ${lead.contactedAt!.split('T').first}',
+                      style: const TextStyle(
+                          fontSize: 10.5,
+                          color: AppTheme.statusContacted,
+                          fontWeight: FontWeight.w600),
+                    ),
+                  ],
+                ),
+              ],
 
-              // Bottom Action Row: Call, Quote Calculator, 1-Tap WhatsApp
+              const Divider(
+                  height: 18, thickness: 0.8, color: AppTheme.borderGrey),
+
+              // Bottom Action Row: Call, SAR Quote, Instant 1-Tap WhatsApp Trigger
               Row(
                 children: [
                   if (lead.notes.isNotEmpty)
@@ -284,7 +373,7 @@ class LeadCard extends StatelessWidget {
                     const Spacer(),
                   const SizedBox(width: 8),
 
-                  // Call Phone Action
+                  // Call Phone
                   IconButton(
                     icon: const Icon(Icons.phone_outlined,
                         size: 18, color: AppTheme.saudiEmerald),
@@ -296,7 +385,7 @@ class LeadCard extends StatelessWidget {
                   ),
                   const SizedBox(width: 10),
 
-                  // Instant Quote Calculator Action
+                  // Instant SAR Quotation Calculator
                   IconButton(
                     icon: const Icon(Icons.calculate_outlined,
                         size: 20, color: AppTheme.royalGold),
@@ -310,24 +399,11 @@ class LeadCard extends StatelessWidget {
                   ),
                   const SizedBox(width: 10),
 
-                  // WhatsApp Dispatch Action
+                  // 1-Tap Trigger WhatsApp Action
                   ElevatedButton.icon(
-                    onPressed: () {
-                      final pitch = WhatsAppService.generatePitchTemplate(
-                        companyName: lead.companyName,
-                        contactPerson: lead.contactPerson,
-                        hub: lead.hub,
-                        staffing: lead.staffingRequirements,
-                      );
-                      WhatsAppService.copyScriptAndDispatch(
-                        context: context,
-                        phone: lead.saudiMobile,
-                        message: pitch,
-                        companyName: lead.companyName,
-                      );
-                    },
+                    onPressed: () => _handleWhatsAppTrigger(context),
                     icon: const Icon(Icons.send_rounded, size: 14),
-                    label: const Text('WhatsApp'),
+                    label: Text(lead.isNew ? 'Pitch' : 'WhatsApp'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF006C4F),
                       foregroundColor: Colors.white,

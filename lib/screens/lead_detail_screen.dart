@@ -1,9 +1,10 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/lead.dart';
 import '../models/ai_analysis.dart';
 import '../services/gemini_service.dart';
-import '../services/hive_service.dart';
+import '../services/storage_service.dart';
 import '../services/whatsapp_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/ai_score_badge.dart';
@@ -22,15 +23,19 @@ class LeadDetailScreen extends StatefulWidget {
 class _LeadDetailScreenState extends State<LeadDetailScreen> {
   late Lead? _lead;
   bool _isAnalyzing = false;
+  bool _isReplyLocked = false;
   late TextEditingController _notesController;
+  late TextEditingController _clientReplyController;
+  Timer? _debounceTimer;
   PitchAngle _selectedPitchAngle = PitchAngle.vipHospitality;
 
   static const List<String> _allStatuses = [
-    'New',
-    'Contacted',
-    'Interested',
-    'Closed',
-    'Disqualified',
+    'new',
+    'contacted',
+    'analyzed',
+    'interested',
+    'closed',
+    'disqualified',
   ];
 
   @override
@@ -38,22 +43,30 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
     super.initState();
     _loadLead();
     _notesController = TextEditingController(text: _lead?.notes ?? '');
+    _clientReplyController =
+        TextEditingController(text: _lead?.clientReply ?? '');
+    // If analysis exists for reply, lock field
+    if (_lead?.clientReply != null && _lead!.clientReply!.isNotEmpty) {
+      _isReplyLocked = true;
+    }
   }
 
   void _loadLead() {
-    _lead = HiveService.instance.getLeadById(widget.leadId);
+    _lead = StorageService.instance.getLeadById(widget.leadId);
   }
 
   @override
   void dispose() {
+    _debounceTimer?.cancel();
     _notesController.dispose();
+    _clientReplyController.dispose();
     super.dispose();
   }
 
   Future<void> _updateStatus(String newStatus) async {
     if (_lead == null) return;
     final updated = _lead!.copyWith(status: newStatus);
-    await HiveService.instance.updateLead(updated);
+    await StorageService.instance.updateLead(updated);
     setState(() {
       _lead = updated;
     });
@@ -62,7 +75,7 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
   Future<void> _saveNotes() async {
     if (_lead == null) return;
     final updated = _lead!.copyWith(notes: _notesController.text.trim());
-    await HiveService.instance.updateLead(updated);
+    await StorageService.instance.updateLead(updated);
     setState(() {
       _lead = updated;
     });
@@ -79,8 +92,8 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
 
   Future<void> _setFollowUp(String? date) async {
     if (_lead == null) return;
-    await HiveService.instance.setFollowUpDate(_lead!.id, date);
-    final refreshed = HiveService.instance.getLeadById(_lead!.id);
+    await StorageService.instance.setFollowUpDate(_lead!.id, date);
+    final refreshed = StorageService.instance.getLeadById(_lead!.id);
     setState(() {
       _lead = refreshed;
     });
@@ -112,135 +125,79 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
     }
   }
 
-  void _openLogActivityDialog() {
-    String selectedType = 'Call';
-    final noteController = TextEditingController();
-    String? newStatus;
+  /// Auto-trigger on client reply paste (no manual "Submit" button needed)
+  void _onClientReplyChanged(String text) {
+    if (_isReplyLocked) return;
 
-    showDialog(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          backgroundColor: Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: Row(
-            children: const [
-              Icon(Icons.edit_note, color: AppTheme.saudiEmerald),
-              SizedBox(width: 8),
-              Text(
-                'Log Sales Interaction',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppTheme.slateNavy),
-              ),
-            ],
-          ),
-          content: SizedBox(
-            width: 400,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('Activity Type:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
-                const SizedBox(height: 6),
-                Wrap(
-                  spacing: 6,
-                  children: ['Call', 'WhatsApp', 'Visit', 'Quotation', 'Note'].map((type) {
-                    final isSel = type == selectedType;
-                    return ChoiceChip(
-                      label: Text(type),
-                      selected: isSel,
-                      selectedColor: AppTheme.saudiEmerald,
-                      labelStyle: TextStyle(
-                        color: isSel ? Colors.white : AppTheme.slateNavy,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      onSelected: (_) => setDialogState(() => selectedType = type),
-                    );
-                  }).toList(),
-                ),
-                const SizedBox(height: 12),
-                const Text('Interaction Summary / Outcome:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
-                const SizedBox(height: 6),
-                TextField(
-                  controller: noteController,
-                  maxLines: 3,
-                  decoration: InputDecoration(
-                    hintText: 'e.g. Called GM Tariq. Agreed on 2 VIP tea boys for boardroom. Sent SAR quote.',
-                    hintStyle: const TextStyle(fontSize: 12, color: AppTheme.textMuted),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    const Text('Update Status: ', style: TextStyle(fontSize: 12, color: AppTheme.textMuted)),
-                    const SizedBox(width: 8),
-                    DropdownButton<String>(
-                      value: newStatus ?? _lead?.status,
-                      isDense: true,
-                      underline: const SizedBox(),
-                      items: _allStatuses.map((s) => DropdownMenuItem(value: s, child: Text(s, style: const TextStyle(fontSize: 12)))).toList(),
-                      onChanged: (val) => setDialogState(() => newStatus = val),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancel', style: TextStyle(color: AppTheme.textMuted)),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                if (noteController.text.trim().isEmpty) return;
-                final now = DateTime.now();
-                final dateStr = '${now.toIso8601String().split('T').first} ${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
-                final activity = LeadActivity(
-                  id: DateTime.now().millisecondsSinceEpoch.toString(),
-                  type: selectedType,
-                  date: dateStr,
-                  note: noteController.text.trim(),
-                );
+    _debounceTimer?.cancel();
+    final trimmed = text.trim();
+    if (trimmed.length < 3) return;
 
-                await HiveService.instance.addActivity(_lead!.id, activity);
-                if (newStatus != null && newStatus != _lead!.status) {
-                  await HiveService.instance.updateLeadStatus(_lead!.id, newStatus!);
-                }
-
-                final refreshed = HiveService.instance.getLeadById(_lead!.id);
-                setState(() {
-                  _lead = refreshed;
-                });
-                Navigator.pop(ctx);
-              },
-              style: ElevatedButton.styleFrom(backgroundColor: AppTheme.saudiEmerald, foregroundColor: Colors.white),
-              child: const Text('Save Activity'),
-            ),
-          ],
-        ),
-      ),
-    );
+    // Fast-detection for wrong-number phrases or auto-analyze after 650ms debounce
+    _debounceTimer = Timer(const Duration(milliseconds: 650), () {
+      _autoAnalyzeClientReply(trimmed);
+    });
   }
 
-  Future<void> _runAiAnalysis() async {
-    if (_lead == null) return;
+  Future<void> _autoAnalyzeClientReply(String replyText) async {
+    if (_lead == null || _isAnalyzing) return;
 
-    setState(() => _isAnalyzing = true);
+    setState(() {
+      _isAnalyzing = true;
+    });
 
     try {
-      final analysis = await GeminiService.instance.analyzeLead(lead: _lead!);
-      final updated = _lead!.copyWith(aiAnalysis: analysis);
-      await HiveService.instance.updateLead(updated);
+      final analysis = await GeminiService.instance.analyzeClientReply(
+        lead: _lead!,
+        clientReply: replyText,
+      );
+
+      final isWrong = analysis.isWrongContact ||
+          analysis.sentiment.toLowerCase().contains('wrong contact');
+
+      Lead updated;
+      if (isWrong) {
+        // Wrong-Number Guard: Mark disqualified, blacklist permanently
+        await StorageService.instance.blacklistContact(
+          rawPhone: _lead!.saudiMobile,
+          reason: 'Client flagged wrong contact: "$replyText"',
+          companyName: _lead!.companyName,
+          leadId: _lead!.id,
+        );
+
+        updated = _lead!.copyWith(
+          status: 'disqualified',
+          isBlacklisted: true,
+          clientReply: replyText,
+          aiAnalysis: analysis,
+        );
+      } else {
+        updated = _lead!.copyWith(
+          status: 'analyzed',
+          clientReply: replyText,
+          followUpDate: analysis.nextFollowUpDate.isNotEmpty
+              ? analysis.nextFollowUpDate
+              : _lead!.followUpDate,
+          aiAnalysis: analysis,
+        );
+      }
+
+      await StorageService.instance.updateLead(updated);
+
       setState(() {
         _lead = updated;
+        _isReplyLocked = true;
       });
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('AI Deal Forecast & Pitch generated successfully!'),
-            backgroundColor: AppTheme.saudiEmerald,
+          SnackBar(
+            content: Text(isWrong
+                ? '⚠️ Wrong contact flagged: Lead disqualified & archived to blacklist.'
+                : '✅ AI forecast generated: Sentiment categorized as "${analysis.sentiment}".'),
+            backgroundColor: isWrong
+                ? AppTheme.statusDisqualified
+                : AppTheme.saudiEmerald,
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -249,7 +206,7 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error generating forecast: $e'),
+            content: Text('Error analyzing reply: $e'),
             backgroundColor: AppTheme.statusDisqualified,
             behavior: SnackBarBehavior.floating,
           ),
@@ -259,6 +216,41 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
       if (mounted) {
         setState(() => _isAnalyzing = false);
       }
+    }
+  }
+
+  /// 1-Tap: Send Apology & Archive Action for Wrong-Number Contacts
+  Future<void> _handleSendApologyAndArchive() async {
+    if (_lead == null) return;
+    await HapticFeedback.lightImpact();
+
+    const apology = GeminiService.apologyExitMessage;
+    await Clipboard.setData(const ClipboardData(text: apology));
+
+    // Ensure permanently blacklisted
+    await StorageService.instance.blacklistContact(
+      rawPhone: _lead!.saudiMobile,
+      reason: 'Wrong Number / Not the person',
+      companyName: _lead!.companyName,
+      leadId: _lead!.id,
+    );
+
+    // Launch WhatsApp with zero-pitch apology
+    await WhatsAppService.launchWhatsApp(
+      phone: _lead!.saudiMobile,
+      message: apology,
+    );
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+              'Apology message sent & contact permanently archived in blacklist.'),
+          backgroundColor: AppTheme.slateNavy,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      Navigator.pop(context);
     }
   }
 
@@ -285,7 +277,7 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
     );
 
     if (confirm == true && _lead != null) {
-      await HiveService.instance.deleteLead(_lead!.id);
+      await StorageService.instance.deleteLead(_lead!.id);
       if (mounted) {
         Navigator.pop(context);
       }
@@ -297,71 +289,149 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
     if (_lead == null) {
       return Scaffold(
         appBar: AppBar(title: const Text('Lead Not Found')),
-        body: const Center(child: Text('This lead does not exist in local storage.')),
+        body:
+            const Center(child: Text('This lead does not exist in local storage.')),
       );
     }
 
     final lead = _lead!;
+    final isWrong = lead.isBlacklisted ||
+        lead.isDisqualified &&
+            (lead.aiAnalysis?.isWrongContact ?? false);
 
-    return Scaffold(
-      resizeToAvoidBottomInset: true,
-      appBar: AppBar(
-        title: Text(
-          lead.companyName,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.delete_outline, color: Colors.white),
-            tooltip: 'Delete Lead',
-            onPressed: _deleteLead,
+    return PopScope(
+      canPop: true,
+      child: Scaffold(
+        resizeToAvoidBottomInset: true,
+        appBar: AppBar(
+          title: Text(
+            lead.companyName,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
           ),
-        ],
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.delete_outline, color: Colors.white),
+              tooltip: 'Delete Lead',
+              onPressed: _deleteLead,
+            ),
+          ],
+        ),
+        body: SafeArea(
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 1000),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Wrong Contact Alert Banner if flagged
+                    if (isWrong) _buildWrongContactAlertBanner(),
+
+                    // Company Header Card
+                    _buildHeaderCard(lead),
+
+                    const SizedBox(height: 16),
+
+                    // Staffing Requirements & Status Card
+                    _buildRequirementsAndStatusCard(lead),
+
+                    const SizedBox(height: 16),
+
+                    // AI Forecasting Engine & Client Reply Auto-Trigger Section
+                    _buildAiForecastingSection(lead),
+
+                    const SizedBox(height: 16),
+
+                    // Multi-Angle Pitch Dispatchers (only if not blacklisted)
+                    if (!isWrong) ...[
+                      _buildPitchDispatchCard(lead),
+                      const SizedBox(height: 16),
+                    ],
+
+                    // Activity Log Timeline Card
+                    _buildActivityTimelineCard(lead),
+
+                    const SizedBox(height: 16),
+
+                    // Notes Card
+                    _buildNotesCard(),
+
+                    const SizedBox(height: 32),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
       ),
-      body: SafeArea(
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 1000),
-            child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Company Header Card
-              _buildHeaderCard(lead),
+    );
+  }
 
-              const SizedBox(height: 16),
-
-              // Staffing Requirements & Status Card
-              _buildRequirementsAndStatusCard(lead),
-
-              const SizedBox(height: 16),
-
-              // AI Forecasting Engine Section
-              _buildAiSection(lead),
-
-              const SizedBox(height: 16),
-
-              // Pitch Dispatchers Card
-              _buildPitchDispatchCard(lead),
-
-              const SizedBox(height: 16),
-
-              // Activity Log Timeline Card
-              _buildActivityTimelineCard(lead),
-
-              const SizedBox(height: 16),
-
-              // Notes Card
-              _buildNotesCard(),
-
-              const SizedBox(height: 32),
+  Widget _buildWrongContactAlertBanner() {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFEF2F2),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFFCA5A5), width: 1.5),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: const [
+              Icon(Icons.gpp_bad_rounded, color: Color(0xFFDC2626), size: 22),
+              SizedBox(width: 8),
+              Text(
+                'Wrong-Number Guard Flagged',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w800,
+                  color: Color(0xFFB91C1C),
+                ),
+              ),
             ],
           ),
-        ),
+          const SizedBox(height: 6),
+          const Text(
+            'The client indicated a misidentified recipient or incorrect phone number. This contact is permanently stored in \'blacklist_contacts\' and will never be scraped or contacted again.',
+            style: TextStyle(fontSize: 12, color: Color(0xFF7F1D1D), height: 1.3),
           ),
-        ),
+          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: const Color(0xFFFECACA)),
+            ),
+            child: const SelectableText(
+              GeminiService.apologyExitMessage,
+              style: TextStyle(
+                fontSize: 12.5,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF991B1B),
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: _handleSendApologyAndArchive,
+              icon: const Icon(Icons.send_rounded, size: 15),
+              label: const Text('1-Tap: Send Apology & Archive (Zero Pitch)'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFDC2626),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 10),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -383,7 +453,8 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
                     color: AppTheme.saudiEmerald.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Icon(Icons.business, color: AppTheme.saudiEmerald, size: 24),
+                  child: const Icon(Icons.business,
+                      color: AppTheme.saudiEmerald, size: 24),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -401,7 +472,8 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
                       const SizedBox(height: 4),
                       Row(
                         children: [
-                          const Icon(Icons.location_on, size: 14, color: AppTheme.royalGold),
+                          const Icon(Icons.location_on,
+                              size: 14, color: AppTheme.royalGold),
                           const SizedBox(width: 4),
                           Text(
                             lead.hub,
@@ -412,11 +484,13 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
                             ),
                           ),
                           const SizedBox(width: 12),
-                          const Icon(Icons.calendar_today, size: 13, color: AppTheme.textMuted),
+                          const Icon(Icons.calendar_today,
+                              size: 13, color: AppTheme.textMuted),
                           const SizedBox(width: 4),
                           Text(
                             'Added: ${lead.dateAdded}',
-                            style: const TextStyle(fontSize: 12, color: AppTheme.textMuted),
+                            style: const TextStyle(
+                                fontSize: 12, color: AppTheme.textMuted),
                           ),
                         ],
                       ),
@@ -433,8 +507,11 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    lead.contactPerson.isNotEmpty ? lead.contactPerson : 'Key Decision Maker',
-                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                    lead.contactPerson.isNotEmpty
+                        ? lead.contactPerson
+                        : 'Corporate Contact',
+                    style: const TextStyle(
+                        fontSize: 14, fontWeight: FontWeight.w600),
                   ),
                 ),
                 Text(
@@ -458,7 +535,8 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
                     ),
                     onPressed: () =>
                         WhatsAppService.launchPhoneCall(lead.saudiMobile),
-                    icon: const Icon(Icons.phone, size: 15, color: AppTheme.saudiEmerald),
+                    icon: const Icon(Icons.phone,
+                        size: 15, color: AppTheme.saudiEmerald),
                     label: const Text('Call',
                         style: TextStyle(
                             fontSize: 12,
@@ -520,7 +598,7 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'Staffing Needs & Pipeline Stage',
+              'Staffing Needs & Pipeline Status',
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w700,
@@ -528,7 +606,6 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
               ),
             ),
             const SizedBox(height: 12),
-            // Staffing Requirements Chips
             Wrap(
               spacing: 8,
               runSpacing: 8,
@@ -543,7 +620,8 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
                     size: 14,
                     color: AppTheme.saudiEmerald,
                   ),
-                  label: Text(req, style: const TextStyle(fontWeight: FontWeight.w600)),
+                  label: Text(req,
+                      style: const TextStyle(fontWeight: FontWeight.w600)),
                   backgroundColor: const Color(0xFFF1F5F9),
                   side: const BorderSide(color: AppTheme.borderGrey),
                 );
@@ -553,7 +631,7 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
             Row(
               children: [
                 const Text(
-                  'Current Status: ',
+                  'Pipeline Status: ',
                   style: TextStyle(fontSize: 13, color: AppTheme.textMuted),
                 ),
                 const SizedBox(width: 8),
@@ -582,7 +660,8 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
                 Icon(
                   Icons.alarm,
                   size: 18,
-                  color: lead.isFollowUpDue ? Colors.red : AppTheme.saudiEmerald,
+                  color:
+                      lead.isFollowUpDue ? Colors.red : AppTheme.saudiEmerald,
                 ),
                 const SizedBox(width: 8),
                 Expanded(
@@ -590,22 +669,27 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        lead.followUpDate != null && lead.followUpDate!.isNotEmpty
+                        lead.followUpDate != null &&
+                                lead.followUpDate!.isNotEmpty
                             ? 'Follow-up: ${lead.followUpDate}'
                             : 'No Follow-up Scheduled',
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w700,
-                          color: lead.isFollowUpDue ? Colors.red : AppTheme.slateNavy,
+                          color: lead.isFollowUpDue
+                              ? Colors.red
+                              : AppTheme.slateNavy,
                         ),
                       ),
                       Text(
                         lead.isFollowUpDue
-                            ? '⚠️ Action required: Follow-up is due today or overdue!'
-                            : 'Scheduled callback with client',
+                            ? '⚠️ Follow-up callback due today or overdue!'
+                            : 'Scheduled callback with office manager',
                         style: TextStyle(
                           fontSize: 11,
-                          color: lead.isFollowUpDue ? Colors.red : AppTheme.textMuted,
+                          color: lead.isFollowUpDue
+                              ? Colors.red
+                              : AppTheme.textMuted,
                         ),
                       ),
                     ],
@@ -632,7 +716,8 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
     );
   }
 
-  Widget _buildAiSection(Lead lead) {
+  /// AI Forecasting Engine (Gemini 1.5 Flash) with Auto-Trigger on Paste
+  Widget _buildAiForecastingSection(Lead lead) {
     final ai = lead.aiAnalysis;
 
     return Card(
@@ -640,7 +725,9 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(14),
         side: BorderSide(
-          color: ai != null ? AppTheme.royalGold.withOpacity(0.5) : AppTheme.borderGrey,
+          color: ai != null
+              ? AppTheme.royalGold.withOpacity(0.5)
+              : AppTheme.borderGrey,
           width: ai != null ? 1.5 : 1,
         ),
       ),
@@ -654,12 +741,13 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
               children: [
                 Row(
                   children: const [
-                    Icon(Icons.auto_awesome, color: AppTheme.royalGold, size: 20),
+                    Icon(Icons.auto_awesome,
+                        color: AppTheme.royalGold, size: 20),
                     SizedBox(width: 8),
                     Text(
-                      'Gemini 1.5 Flash Forecast',
+                      'AI Forecasting Engine (Gemini 1.5 Flash)',
                       style: TextStyle(
-                        fontSize: 15,
+                        fontSize: 14.5,
                         fontWeight: FontWeight.w700,
                         color: AppTheme.slateNavy,
                       ),
@@ -669,42 +757,152 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
                 if (ai != null) AiScoreBadge(score: ai.dealScore),
               ],
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 6),
             const Text(
-              'AI analyzes Riyadh market hub, staffing tiers, and pain points to calculate conversion probability.',
+              'Paste client WhatsApp replies below. Automatically triggers sentiment analysis, objection handling & next steps without manual submit.',
               style: TextStyle(fontSize: 12, color: AppTheme.textMuted),
             ),
             const SizedBox(height: 14),
+
+            // Paste Client Reply Field with Lock/Edit icon
+            Container(
+              decoration: BoxDecoration(
+                color: _isReplyLocked
+                    ? const Color(0xFFF1F5F9)
+                    : const Color(0xFFF8FAFC),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: _isReplyLocked
+                      ? AppTheme.borderGrey
+                      : AppTheme.saudiEmerald,
+                  width: _isReplyLocked ? 1 : 1.5,
+                ),
+              ),
+              padding: const EdgeInsets.all(10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            _isReplyLocked ? Icons.lock : Icons.content_paste,
+                            size: 14,
+                            color: _isReplyLocked
+                                ? AppTheme.textMuted
+                                : AppTheme.saudiEmerald,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            _isReplyLocked
+                                ? 'Client Reply (Locked after Analysis)'
+                                : 'Paste Client Reply to Auto-Analyze:',
+                            style: TextStyle(
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w700,
+                              color: _isReplyLocked
+                                  ? AppTheme.textMuted
+                                  : AppTheme.saudiEmerald,
+                            ),
+                          ),
+                        ],
+                      ),
+                      if (_isReplyLocked)
+                        IconButton(
+                          icon: const Icon(Icons.edit_outlined, size: 16),
+                          tooltip: 'Unlock to edit or re-paste',
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                          onPressed: () {
+                            setState(() => _isReplyLocked = false);
+                          },
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  TextField(
+                    controller: _clientReplyController,
+                    readOnly: _isReplyLocked,
+                    maxLines: 3,
+                    onChanged: _onClientReplyChanged,
+                    decoration: InputDecoration(
+                      hintText: _isReplyLocked
+                          ? 'Analyzed client reply'
+                          : 'Paste WhatsApp reply here e.g. "كم السعر؟", "عندنا شركة حاليا", "غلطان بالرقم"...',
+                      hintStyle: const TextStyle(
+                          fontSize: 12, color: AppTheme.textMuted),
+                      border: InputBorder.none,
+                      isDense: true,
+                    ),
+                  ),
+                  if (_isAnalyzing) ...[
+                    const SizedBox(height: 8),
+                    Row(
+                      children: const [
+                        SizedBox(
+                          width: 14,
+                          height: 14,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: AppTheme.saudiEmerald,
+                          ),
+                        ),
+                        SizedBox(width: 8),
+                        Text(
+                          'Analyzing reply with Gemini 1.5 Flash...',
+                          style: TextStyle(
+                              fontSize: 11.5,
+                              color: AppTheme.saudiEmerald,
+                              fontWeight: FontWeight.w600),
+                        ),
+                      ],
+                    ),
+                  ],
+                ],
+              ),
+            ),
+
             if (ai != null) ...[
-              // Sentiment & Follow Up Date
+              const SizedBox(height: 14),
+              // Sentiment Tag & Next Follow-Up Date
               Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
-                      color: AppTheme.saudiEmerald.withOpacity(0.1),
+                      color: ai.isWrongContact
+                          ? const Color(0xFFFEE2E2)
+                          : const Color(0xFFE6F4EA),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
                       'Sentiment: ${ai.sentiment}',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
-                        color: AppTheme.saudiEmerald,
+                        color: ai.isWrongContact
+                            ? const Color(0xFFDC2626)
+                            : AppTheme.saudiEmerald,
                       ),
                     ),
                   ),
                   const Spacer(),
                   if (ai.nextFollowUpDate.isNotEmpty)
                     Text(
-                      'Target Date: ${ai.nextFollowUpDate}',
-                      style: const TextStyle(fontSize: 12, color: AppTheme.textMuted),
+                      'Next Action: ${ai.nextFollowUpDate}',
+                      style: const TextStyle(
+                          fontSize: 12, color: AppTheme.textMuted),
                     ),
                 ],
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 10),
+
               // Recommended Action
               Container(
+                width: double.infinity,
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: const Color(0xFFF8FAFC),
@@ -725,62 +923,104 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
                     const SizedBox(height: 4),
                     Text(
                       ai.recommendedAction,
-                      style: const TextStyle(fontSize: 12.5, color: AppTheme.textDark),
+                      style: const TextStyle(
+                          fontSize: 12.5, color: AppTheme.textDark),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 12),
-              // Pain Points
+
               if (ai.painPoints.isNotEmpty) ...[
-                const Text(
-                  'Identified Pain Points:',
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+                const SizedBox(height: 10),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFFBEB),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: const Color(0xFFFDE68A)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Pain Points & Objections:',
+                        style: TextStyle(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFFB45309)),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        ai.painPoints,
+                        style: const TextStyle(
+                            fontSize: 12, color: Color(0xFF78350F)),
+                      ),
+                    ],
+                  ),
                 ),
-                const SizedBox(height: 6),
-                ...ai.painPoints.map(
-                  (pt) => Padding(
-                    padding: const EdgeInsets.only(bottom: 4),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text('• ', style: TextStyle(color: AppTheme.statusDisqualified)),
-                        Expanded(
-                          child: Text(
-                            pt,
-                            style: const TextStyle(fontSize: 12, color: AppTheme.textDark),
+              ],
+
+              // Copyable Follow-up Script
+              if (ai.followUpMessage.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF0FDF4),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: const Color(0xFFBBF7D0)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: const [
+                          Text(
+                            'Personalized Follow-up Script:',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: AppTheme.saudiEmerald,
+                            ),
                           ),
+                          Icon(Icons.auto_awesome,
+                              size: 14, color: AppTheme.royalGold),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      SelectableText(
+                        ai.followUpMessage,
+                        style: const TextStyle(
+                            fontSize: 12.5,
+                            height: 1.4,
+                            color: AppTheme.textDark),
+                      ),
+                      const SizedBox(height: 10),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF006C4F),
+                          ),
+                          onPressed: () {
+                            WhatsAppService.copyScriptAndDispatch(
+                              context: context,
+                              phone: lead.saudiMobile,
+                              message: ai.followUpMessage,
+                              companyName: lead.companyName,
+                            );
+                          },
+                          icon: const Icon(Icons.send_rounded, size: 14),
+                          label: const Text('1-Tap: Copy Script & Send WhatsApp'),
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
               ],
             ],
-            const SizedBox(height: 14),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: ai != null ? AppTheme.slateNavy : AppTheme.saudiEmerald,
-                ),
-                onPressed: _isAnalyzing ? null : _runAiAnalysis,
-                icon: _isAnalyzing
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                      )
-                    : const Icon(Icons.auto_awesome, size: 16),
-                label: Text(
-                  _isAnalyzing
-                      ? 'Analyzing with Gemini...'
-                      : ai == null
-                          ? 'Generate Deal Forecast & AI Pitch'
-                          : 'Re-Analyze Deal Forecast',
-                ),
-              ),
-            ),
           ],
         ),
       ),
@@ -788,14 +1028,6 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
   }
 
   Widget _buildPitchDispatchCard(Lead lead) {
-    final ai = lead.aiAnalysis;
-    final standardPitch = WhatsAppService.generatePitchTemplate(
-      companyName: lead.companyName,
-      contactPerson: lead.contactPerson,
-      hub: lead.hub,
-      staffing: lead.staffingRequirements,
-    );
-
     return Card(
       elevation: 1,
       child: Padding(
@@ -808,7 +1040,7 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
                 Icon(Icons.send_rounded, color: Color(0xFF006C4F), size: 20),
                 SizedBox(width: 8),
                 Text(
-                  'Multilingual WhatsApp Dispatcher',
+                  'Corporate WhatsApp Pitches',
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
@@ -819,73 +1051,10 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
             ),
             const SizedBox(height: 6),
             const Text(
-              'Pre-formatted Saudi enterprise copy with Unicode BiDi isolation to prevent Arabic/English layout mixing.',
+              'Select angle to load pre-drafted corporate pitch with Unicode BiDi isolation:',
               style: TextStyle(fontSize: 12, color: AppTheme.textMuted),
             ),
-            const SizedBox(height: 14),
-
-            // AI Personalized Pitch (if available)
-            if (ai != null && ai.followUpMessage.isNotEmpty) ...[
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF0FDF4),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: const Color(0xFFBBF7D0)),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: const [
-                        Text(
-                          'AI Tailored Script (Arabic/English):',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: AppTheme.saudiEmerald,
-                          ),
-                        ),
-                        Icon(Icons.auto_awesome, size: 14, color: AppTheme.royalGold),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      WhatsAppService.isolateBiDi(ai.followUpMessage),
-                      style: const TextStyle(fontSize: 12.5, height: 1.4, color: AppTheme.textDark),
-                    ),
-                    const SizedBox(height: 10),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF006C4F),
-                        ),
-                        onPressed: () {
-                          WhatsAppService.copyScriptAndDispatch(
-                            context: context,
-                            phone: lead.saudiMobile,
-                            message: ai.followUpMessage,
-                            companyName: lead.companyName,
-                          );
-                        },
-                        icon: const Icon(Icons.send_rounded, size: 15),
-                        label: const Text('1-Tap: Copy AI Pitch & Launch WhatsApp'),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 12),
-            ],
-
-            // Targeted Multi-Angle Pitch Selector
-            const Text(
-              'Select Corporate Pitch Angle:',
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
-            ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 10),
             Wrap(
               spacing: 6,
               runSpacing: 6,
@@ -909,10 +1078,10 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
                       () => _selectedPitchAngle = PitchAngle.nightCleaning),
                 ),
                 ChoiceChip(
-                  label: const Text('🎁 1-Week Free Trial'),
+                  label: const Text('🎁 3-Day Free Trial'),
                   selected: _selectedPitchAngle == PitchAngle.freeTrial,
-                  onSelected: (_) =>
-                      setState(() => _selectedPitchAngle = PitchAngle.freeTrial),
+                  onSelected: (_) => setState(
+                      () => _selectedPitchAngle = PitchAngle.freeTrial),
                 ),
               ],
             ),
@@ -936,10 +1105,12 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    SelectableText(
                       angledPitch,
                       style: const TextStyle(
-                          fontSize: 12, height: 1.4, color: AppTheme.textDark),
+                          fontSize: 12,
+                          height: 1.4,
+                          color: AppTheme.textDark),
                     ),
                     const SizedBox(height: 10),
                     Row(
@@ -1001,10 +1172,11 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
               children: [
                 Row(
                   children: const [
-                    Icon(Icons.history_toggle_off_outlined, color: AppTheme.saudiEmerald, size: 20),
+                    Icon(Icons.history_toggle_off_outlined,
+                        color: AppTheme.saudiEmerald, size: 20),
                     SizedBox(width: 8),
                     Text(
-                      'Activity Log & Interactions',
+                      'Activity Log & History',
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
@@ -1012,19 +1184,6 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
                       ),
                     ),
                   ],
-                ),
-                ElevatedButton.icon(
-                  onPressed: _openLogActivityDialog,
-                  icon: const Icon(Icons.add, size: 14),
-                  label: const Text('Log Action'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.saudiEmerald,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    minimumSize: Size.zero,
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  ),
                 ),
               ],
             ),
@@ -1039,7 +1198,7 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
                   border: Border.all(color: AppTheme.borderGrey),
                 ),
                 child: const Text(
-                  'No interactions logged yet. Tap "+ Log Action" after calling the client, visiting their office, or sending WhatsApp proposals.',
+                  'No interactions logged yet. WhatsApp pitches and calls are automatically recorded.',
                   style: TextStyle(fontSize: 12, color: AppTheme.textMuted),
                 ),
               )
@@ -1048,43 +1207,21 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 itemCount: lead.activities.length,
-                separatorBuilder: (_, __) => const Divider(height: 16, color: AppTheme.borderGrey),
+                separatorBuilder: (_, __) =>
+                    const Divider(height: 16, color: AppTheme.borderGrey),
                 itemBuilder: (context, i) {
                   final act = lead.activities[i];
-                  IconData icon;
-                  Color color;
-                  switch (act.type) {
-                    case 'Call':
-                      icon = Icons.phone;
-                      color = AppTheme.saudiEmerald;
-                      break;
-                    case 'WhatsApp':
-                      icon = Icons.chat;
-                      color = const Color(0xFF25D366);
-                      break;
-                    case 'Visit':
-                      icon = Icons.location_city;
-                      color = AppTheme.royalGold;
-                      break;
-                    case 'Quotation':
-                      icon = Icons.receipt_long;
-                      color = AppTheme.slateNavy;
-                      break;
-                    default:
-                      icon = Icons.notes;
-                      color = AppTheme.textMuted;
-                  }
-
                   return Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Container(
                         padding: const EdgeInsets.all(6),
                         decoration: BoxDecoration(
-                          color: color.withOpacity(0.12),
+                          color: const Color(0xFF25D366).withOpacity(0.12),
                           shape: BoxShape.circle,
                         ),
-                        child: Icon(icon, size: 14, color: color),
+                        child: const Icon(Icons.chat,
+                            size: 14, color: Color(0xFF006C4F)),
                       ),
                       const SizedBox(width: 10),
                       Expanded(
@@ -1096,10 +1233,10 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
                               children: [
                                 Text(
                                   act.type,
-                                  style: TextStyle(
+                                  style: const TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w700,
-                                    color: color,
+                                    color: AppTheme.slateNavy,
                                   ),
                                 ),
                                 Text(
@@ -1141,7 +1278,7 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'Sales Notes & Context',
+              'Private Context & Notes',
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w700,
@@ -1151,13 +1288,14 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
             const SizedBox(height: 10),
             TextField(
               controller: _notesController,
-              maxLines: 4,
+              maxLines: 3,
               decoration: const InputDecoration(
-                hintText: 'Add private context, client preferences, shift hours...',
+                hintText:
+                    'Add private client preferences, shift hours, VIP requirements...',
                 alignLabelWithHint: true,
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 10),
             Align(
               alignment: Alignment.centerRight,
               child: ElevatedButton.icon(

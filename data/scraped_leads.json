@@ -1,0 +1,728 @@
+[
+  {
+    "id": "sada solutions ksa_966586392512",
+    "company_name": "Sada Solutions KSA",
+    "contact_person": "Sultan Al-Harbi",
+    "phone": "966586392512",
+    "saudi_mobile": "966586392512",
+    "zone_cluster": "Al Yarmouk",
+    "hub": "Al Yarmouk",
+    "cluster_group": "Tech & Logistics Corridors",
+    "staffing_requirements": [
+      "Tea Boy",
+      "Pantry Staff"
+    ],
+    "intent_score": 78,
+    "date_added": "2026-09-15",
+    "status": "new",
+    "notes": "Newly fitted corporate office in Al Yarmouk. Sector: Commercial corporate services & supply chain offices."
+  },
+  {
+    "id": "al-enma engineering & consulting_966537741164",
+    "company_name": "Al-Enma Engineering & Consulting",
+    "contact_person": "Fahad Al-Bishi",
+    "phone": "966537741164",
+    "saudi_mobile": "966537741164",
+    "zone_cluster": "Al Yasmin",
+    "hub": "Al Yasmin",
+    "cluster_group": "Hotspot Boom Strip",
+    "staffing_requirements": [
+      "Tea Boy",
+      "Pantry Staff",
+      "Cleaners"
+    ],
+    "intent_score": 82,
+    "date_added": "2026-09-16",
+    "status": "new",
+    "notes": "Newly fitted corporate office in Al Yasmin. Sector: Boutique agencies & investment offices."
+  },
+  {
+    "id": "al-enma tech innovations_966508401199",
+    "company_name": "Al-Enma Tech Innovations",
+    "contact_person": "Sultan Al-Shehri",
+    "phone": "966508401199",
+    "saudi_mobile": "966508401199",
+    "zone_cluster": "Al Khuzama",
+    "hub": "Al Khuzama",
+    "cluster_group": "Hotspot Boom Strip",
+    "staffing_requirements": [
+      "Tea Boy",
+      "Pantry Staff",
+      "Cleaners"
+    ],
+    "intent_score": 89,
+    "date_added": "2026-09-16",
+    "status": "new",
+    "notes": "Newly fitted corporate office in Al Khuzama. Sector: Executive suites & family offices."
+  },
+  {
+    "id": "al-faisaliah capital advisory_966509115155",
+    "company_name": "Al-Faisaliah Capital Advisory",
+    "contact_person": "Abdullah Al-Bishi",
+    "phone": "966509115155",
+    "saudi_mobile": "966509115155",
+    "zone_cluster": "Al Yarmouk",
+    "hub": "Al Yarmouk",
+    "cluster_group": "Tech & Logistics Corridors",
+    "staffing_requirements": [
+      "Tea Boy",
+      "Pantry Staff"
+    ],
+    "intent_score": 79,
+    "date_added": "2026-09-14",
+    "status": "new",
+    "notes": "Newly fitted corporate office in Al Yarmouk. Sector: Commercial corporate services & supply chain offices."
+  },
+  {
+    "id": "sanad engineering & consulting_966544432039",
+    "company_name": "Sanad Engineering & Consulting",
+    "contact_person": "Saud Al-Ghamdi",
+    "phone": "966544432039",
+    "saudi_mobile": "966544432039",
+    "zone_cluster": "Al Yasmin",
+    "hub": "Al Yasmin",
+    "cluster_group": "Hotspot Boom Strip",
+    "staffing_requirements": [
+      "Tea Boy",
+      "Cleaners"
+    ],
+    "intent_score": 80,
+    "date_added": "2026-09-15",
+    "status": "new",
+    "notes": "Newly fitted corporate office in Al Yasmin. Sector: Boutique agencies & investment offices."
+  },
+  {
+    "id": "al-murabba solutions ksa_966565830983",
+    "company_name": "Al-Murabba Solutions KSA",
+    "contact_person": "Mansour Al-Qahtani",
+    "phone": "966565830983",
+    "saudi_mobile": "966565830983",
+    "zone_cluster": "Al Narjis Commercial",
+    "hub": "Al Narjis Commercial",
+    "cluster_group": "Hotspot Boom Strip",
+    "staffing_requirements": [
+      "Tea Boy"
+    ],
+    "intent_score": 93,
+    "date_added": "2026-09-14",
+    "status": "new",
+    "notes": "Newly fitted corporate office in Al Narjis Commercial. Sector: Newly fitted-out corporate offices & consultancies."
+  },
+  {
+    "id": "diriyah digital systems_966591330033",
+    "company_name": "Diriyah Digital Systems",
+    "contact_person": "Ziyad Al-Amri",
+    "phone": "966591330033",
+    "saudi_mobile": "966591330033",
+    "zone_cluster": "Riyadh Second Industrial City",
+    "hub": "Riyadh Second Industrial City",
+    "cluster_group": "Industrial HQs",
+    "staffing_requirements": [
+      "Tea Boy",
+      "Cleaners"
+    ],
+    "intent_score": 84,
+    "date_added": "2026-09-16",
+    "status": "new",
+    "notes": "Newly fitted corporate office in Riyadh Second Industrial City. Sector: Manufacturing HQs, pharma plants & engineering offices."
+  },
+  {
+    "id": "al-murabba regional headquarters_966509745458",
+    "company_name": "Al-Murabba Regional Headquarters",
+    "contact_person": "Khalid Al-Ghamdi",
+    "phone": "966509745458",
+    "saudi_mobile": "966509745458",
+    "zone_cluster": "Al Yasmin",
+    "hub": "Al Yasmin",
+    "cluster_group": "Hotspot Boom Strip",
+    "staffing_requirements": [
+      "Tea Boy",
+      "Cleaners"
+    ],
+    "intent_score": 84,
+    "date_added": "2026-09-14",
+    "status": "new",
+    "notes": "Newly fitted corporate office in Al Yasmin. Sector: Boutique agencies & investment offices."
+  },
+  {
+    "id": "al-oula solutions ksa_966566773514",
+    "company_name": "Al-Oula Solutions KSA",
+    "contact_person": "Mohammed Al-Ghamdi",
+    "phone": "966566773514",
+    "saudi_mobile": "966566773514",
+    "zone_cluster": "Granada Business Park",
+    "hub": "Granada Business Park",
+    "cluster_group": "Tech & Logistics Corridors",
+    "staffing_requirements": [
+      "Tea Boy",
+      "Pantry Staff"
+    ],
+    "intent_score": 85,
+    "date_added": "2026-09-15",
+    "status": "new",
+    "notes": "Newly fitted corporate office in Granada Business Park. Sector: Telecom giants & shared service centers."
+  },
+  {
+    "id": "al-enma global investment group_966596781203",
+    "company_name": "Al-Enma Global Investment Group",
+    "contact_person": "Tariq Al-Zahrani",
+    "phone": "966596781203",
+    "saudi_mobile": "966596781203",
+    "zone_cluster": "Al Malqa Office Blocks",
+    "hub": "Al Malqa Office Blocks",
+    "cluster_group": "Core Corporate Hubs",
+    "staffing_requirements": [
+      "Tea Boy",
+      "Pantry Staff"
+    ],
+    "intent_score": 85,
+    "date_added": "2026-09-16",
+    "status": "new",
+    "notes": "Newly fitted corporate office in Al Malqa Office Blocks. Sector: Executive clinics, private equity & venture studios."
+  },
+  {
+    "id": "tadawul al-khaleej digital systems_966563818112",
+    "company_name": "Tadawul Al-Khaleej Digital Systems",
+    "contact_person": "Mansour Al-Otaibi",
+    "phone": "966563818112",
+    "saudi_mobile": "966563818112",
+    "zone_cluster": "Granada Business Park",
+    "hub": "Granada Business Park",
+    "cluster_group": "Tech & Logistics Corridors",
+    "staffing_requirements": [
+      "Tea Boy",
+      "Pantry Staff",
+      "Cleaners"
+    ],
+    "intent_score": 90,
+    "date_added": "2026-09-16",
+    "status": "new",
+    "notes": "Newly fitted corporate office in Granada Business Park. Sector: Telecom giants & shared service centers."
+  },
+  {
+    "id": "al-oula healthcare management_966536715957",
+    "company_name": "Al-Oula Healthcare Management",
+    "contact_person": "Khalid Al-Zahrani",
+    "phone": "966536715957",
+    "saudi_mobile": "966536715957",
+    "zone_cluster": "Al Khuzama",
+    "hub": "Al Khuzama",
+    "cluster_group": "Hotspot Boom Strip",
+    "staffing_requirements": [
+      "Tea Boy",
+      "Pantry Staff",
+      "Cleaners"
+    ],
+    "intent_score": 87,
+    "date_added": "2026-09-16",
+    "status": "new",
+    "notes": "Newly fitted corporate office in Al Khuzama. Sector: Executive suites & family offices."
+  },
+  {
+    "id": "al-mada healthcare management_966500275662",
+    "company_name": "Al-Mada Healthcare Management",
+    "contact_person": "Ziyad Al-Bishi",
+    "phone": "966500275662",
+    "saudi_mobile": "966500275662",
+    "zone_cluster": "Al Narjis Commercial",
+    "hub": "Al Narjis Commercial",
+    "cluster_group": "Hotspot Boom Strip",
+    "staffing_requirements": [
+      "Tea Boy",
+      "Pantry Staff",
+      "Cleaners"
+    ],
+    "intent_score": 92,
+    "date_added": "2026-09-16",
+    "status": "new",
+    "notes": "Newly fitted corporate office in Al Narjis Commercial. Sector: Newly fitted-out corporate offices & consultancies."
+  },
+  {
+    "id": "al-oula capital advisory_966544100333",
+    "company_name": "Al-Oula Capital Advisory",
+    "contact_person": "Abdulaziz Al-Amri",
+    "phone": "966544100333",
+    "saudi_mobile": "966544100333",
+    "zone_cluster": "Digital City",
+    "hub": "Digital City",
+    "cluster_group": "Core Corporate Hubs",
+    "staffing_requirements": [
+      "Tea Boy",
+      "Pantry Staff"
+    ],
+    "intent_score": 91,
+    "date_added": "2026-09-15",
+    "status": "new",
+    "notes": "Newly fitted corporate office in Digital City. Sector: Fintech, cybersecurity, IT & government contractors."
+  },
+  {
+    "id": "al-faisaliah general trading & contracting_966556783138",
+    "company_name": "Al-Faisaliah General Trading & Contracting",
+    "contact_person": "Saud Al-Bishi",
+    "phone": "966556783138",
+    "saudi_mobile": "966556783138",
+    "zone_cluster": "King Salman Road Business Strip",
+    "hub": "King Salman Road Business Strip",
+    "cluster_group": "Hotspot Boom Strip",
+    "staffing_requirements": [
+      "Tea Boy",
+      "Cleaners"
+    ],
+    "intent_score": 89,
+    "date_added": "2026-09-16",
+    "status": "new",
+    "notes": "Newly fitted corporate office in King Salman Road Business Strip. Sector: Regional headquarters (RHQ) & financial advisory."
+  },
+  {
+    "id": "sada capital advisory_966597180695",
+    "company_name": "Sada Capital Advisory",
+    "contact_person": "Mansour Al-Subaie",
+    "phone": "966597180695",
+    "saudi_mobile": "966597180695",
+    "zone_cluster": "Al Yarmouk",
+    "hub": "Al Yarmouk",
+    "cluster_group": "Tech & Logistics Corridors",
+    "staffing_requirements": [
+      "Tea Boy",
+      "Pantry Staff"
+    ],
+    "intent_score": 76,
+    "date_added": "2026-09-15",
+    "status": "new",
+    "notes": "Newly fitted corporate office in Al Yarmouk. Sector: Commercial corporate services & supply chain offices."
+  },
+  {
+    "id": "waha engineering & consulting_966534998340",
+    "company_name": "Waha Engineering & Consulting",
+    "contact_person": "Fahad Al-Otaibi",
+    "phone": "966534998340",
+    "saudi_mobile": "966534998340",
+    "zone_cluster": "King Salman Road Business Strip",
+    "hub": "King Salman Road Business Strip",
+    "cluster_group": "Hotspot Boom Strip",
+    "staffing_requirements": [
+      "Tea Boy",
+      "Pantry Staff",
+      "Cleaners"
+    ],
+    "intent_score": 87,
+    "date_added": "2026-09-14",
+    "status": "new",
+    "notes": "Newly fitted corporate office in King Salman Road Business Strip. Sector: Regional headquarters (RHQ) & financial advisory."
+  },
+  {
+    "id": "waha logistics & supply chain_966566009976",
+    "company_name": "Waha Logistics & Supply Chain",
+    "contact_person": "Abdulaziz Al-Subaie",
+    "phone": "966566009976",
+    "saudi_mobile": "966566009976",
+    "zone_cluster": "King Salman Road Business Strip",
+    "hub": "King Salman Road Business Strip",
+    "cluster_group": "Hotspot Boom Strip",
+    "staffing_requirements": [
+      "Tea Boy",
+      "Pantry Staff"
+    ],
+    "intent_score": 89,
+    "date_added": "2026-09-16",
+    "status": "new",
+    "notes": "Newly fitted corporate office in King Salman Road Business Strip. Sector: Regional headquarters (RHQ) & financial advisory."
+  },
+  {
+    "id": "rawafed logistics & supply chain_966589720526",
+    "company_name": "Rawafed Logistics & Supply Chain",
+    "contact_person": "Nasser Al-Amri",
+    "phone": "966589720526",
+    "saudi_mobile": "966589720526",
+    "zone_cluster": "Roshn Front Business Zone",
+    "hub": "Roshn Front Business Zone",
+    "cluster_group": "Hotspot Boom Strip",
+    "staffing_requirements": [
+      "Tea Boy",
+      "Cleaners"
+    ],
+    "intent_score": 91,
+    "date_added": "2026-09-16",
+    "status": "new",
+    "notes": "Newly fitted corporate office in Roshn Front Business Zone. Sector: Tech ventures & regional corporate suites."
+  },
+  {
+    "id": "afaf logistics & supply chain_966505025969",
+    "company_name": "Afaf Logistics & Supply Chain",
+    "contact_person": "Ziyad Al-Bishi",
+    "phone": "966505025969",
+    "saudi_mobile": "966505025969",
+    "zone_cluster": "Al Yarmouk",
+    "hub": "Al Yarmouk",
+    "cluster_group": "Tech & Logistics Corridors",
+    "staffing_requirements": [
+      "Tea Boy"
+    ],
+    "intent_score": 82,
+    "date_added": "2026-09-16",
+    "status": "new",
+    "notes": "Newly fitted corporate office in Al Yarmouk. Sector: Commercial corporate services & supply chain offices."
+  },
+  {
+    "id": "sada regional headquarters_966537073678",
+    "company_name": "Sada Regional Headquarters",
+    "contact_person": "Nasser Al-Otaibi",
+    "phone": "966537073678",
+    "saudi_mobile": "966537073678",
+    "zone_cluster": "Riyadh Second Industrial City",
+    "hub": "Riyadh Second Industrial City",
+    "cluster_group": "Industrial HQs",
+    "staffing_requirements": [
+      "Tea Boy",
+      "Cleaners"
+    ],
+    "intent_score": 83,
+    "date_added": "2026-09-16",
+    "status": "new",
+    "notes": "Newly fitted corporate office in Riyadh Second Industrial City. Sector: Manufacturing HQs, pharma plants & engineering offices."
+  },
+  {
+    "id": "al-safwa digital systems_966548112755",
+    "company_name": "Al-Safwa Digital Systems",
+    "contact_person": "Saud Al-Mutairi",
+    "phone": "966548112755",
+    "saudi_mobile": "966548112755",
+    "zone_cluster": "King Khalid Int'l Airport Logistics Zone",
+    "hub": "King Khalid Int'l Airport Logistics Zone",
+    "cluster_group": "Tech & Logistics Corridors",
+    "staffing_requirements": [
+      "Cleaners",
+      "Pantry Staff"
+    ],
+    "intent_score": 86,
+    "date_added": "2026-09-15",
+    "status": "new",
+    "notes": "Newly fitted corporate office in King Khalid Int'l Airport Logistics Zone. Sector: Air freight & international supply chain HQs."
+  },
+  {
+    "id": "tadawul al-khaleej tech innovations_966544849307",
+    "company_name": "Tadawul Al-Khaleej Tech Innovations",
+    "contact_person": "Abdulaziz Al-Amri",
+    "phone": "966544849307",
+    "saudi_mobile": "966544849307",
+    "zone_cluster": "Al Narjis Commercial",
+    "hub": "Al Narjis Commercial",
+    "cluster_group": "Hotspot Boom Strip",
+    "staffing_requirements": [
+      "Tea Boy",
+      "Pantry Staff"
+    ],
+    "intent_score": 91,
+    "date_added": "2026-09-16",
+    "status": "new",
+    "notes": "Newly fitted corporate office in Al Narjis Commercial. Sector: Newly fitted-out corporate offices & consultancies."
+  },
+  {
+    "id": "riyadh vision digital systems_966507371560",
+    "company_name": "Riyadh Vision Digital Systems",
+    "contact_person": "Ziyad Al-Zahrani",
+    "phone": "966507371560",
+    "saudi_mobile": "966507371560",
+    "zone_cluster": "KAFD Phase 1 & 2",
+    "hub": "KAFD Phase 1 & 2",
+    "cluster_group": "Core Corporate Hubs",
+    "staffing_requirements": [
+      "Cleaners",
+      "Pantry Staff"
+    ],
+    "intent_score": 93,
+    "date_added": "2026-09-16",
+    "status": "new",
+    "notes": "Newly fitted corporate office in KAFD Phase 1 & 2. Sector: Investment banks, RHQ headquarters & tier-1 consultancies."
+  },
+  {
+    "id": "al-rowad regional headquarters_966547584506",
+    "company_name": "Al-Rowad Regional Headquarters",
+    "contact_person": "Ziyad Al-Otaibi",
+    "phone": "966547584506",
+    "saudi_mobile": "966547584506",
+    "zone_cluster": "Al Khuzama",
+    "hub": "Al Khuzama",
+    "cluster_group": "Hotspot Boom Strip",
+    "staffing_requirements": [
+      "Tea Boy"
+    ],
+    "intent_score": 84,
+    "date_added": "2026-09-16",
+    "status": "new",
+    "notes": "Newly fitted corporate office in Al Khuzama. Sector: Executive suites & family offices."
+  },
+  {
+    "id": "diriyah regional headquarters_966566819352",
+    "company_name": "Diriyah Regional Headquarters",
+    "contact_person": "Saud Al-Subaie",
+    "phone": "966566819352",
+    "saudi_mobile": "966566819352",
+    "zone_cluster": "KAFD Phase 1 & 2",
+    "hub": "KAFD Phase 1 & 2",
+    "cluster_group": "Core Corporate Hubs",
+    "staffing_requirements": [
+      "Tea Boy",
+      "Pantry Staff"
+    ],
+    "intent_score": 93,
+    "date_added": "2026-09-16",
+    "status": "new",
+    "notes": "Newly fitted corporate office in KAFD Phase 1 & 2. Sector: Investment banks, RHQ headquarters & tier-1 consultancies."
+  },
+  {
+    "id": "al-murabba capital advisory_966566471900",
+    "company_name": "Al-Murabba Capital Advisory",
+    "contact_person": "Fahad Al-Bishi",
+    "phone": "966566471900",
+    "saudi_mobile": "966566471900",
+    "zone_cluster": "Al Narjis Commercial",
+    "hub": "Al Narjis Commercial",
+    "cluster_group": "Hotspot Boom Strip",
+    "staffing_requirements": [
+      "Tea Boy",
+      "Pantry Staff",
+      "Cleaners"
+    ],
+    "intent_score": 91,
+    "date_added": "2026-09-15",
+    "status": "new",
+    "notes": "Newly fitted corporate office in Al Narjis Commercial. Sector: Newly fitted-out corporate offices & consultancies."
+  },
+  {
+    "id": "tuwaiq regional headquarters_966565759640",
+    "company_name": "Tuwaiq Regional Headquarters",
+    "contact_person": "Nasser Al-Bishi",
+    "phone": "966565759640",
+    "saudi_mobile": "966565759640",
+    "zone_cluster": "Al Narjis Commercial",
+    "hub": "Al Narjis Commercial",
+    "cluster_group": "Hotspot Boom Strip",
+    "staffing_requirements": [
+      "Tea Boy"
+    ],
+    "intent_score": 92,
+    "date_added": "2026-09-15",
+    "status": "new",
+    "notes": "Newly fitted corporate office in Al Narjis Commercial. Sector: Newly fitted-out corporate offices & consultancies."
+  },
+  {
+    "id": "al-bayan tech innovations_966540230089",
+    "company_name": "Al-Bayan Tech Innovations",
+    "contact_person": "Abdulaziz Al-Qahtani",
+    "phone": "966540230089",
+    "saudi_mobile": "966540230089",
+    "zone_cluster": "New Murabba Corridor",
+    "hub": "New Murabba Corridor",
+    "cluster_group": "Hotspot Boom Strip",
+    "staffing_requirements": [
+      "Tea Boy",
+      "Pantry Staff",
+      "Cleaners"
+    ],
+    "intent_score": 92,
+    "date_added": "2026-09-16",
+    "status": "new",
+    "notes": "Newly fitted corporate office in New Murabba Corridor. Sector: Mega-project contractor & engineering consultant HQs."
+  },
+  {
+    "id": "al-bayan logistics & supply chain_966580472133",
+    "company_name": "Al-Bayan Logistics & Supply Chain",
+    "contact_person": "Saud Al-Mutairi",
+    "phone": "966580472133",
+    "saudi_mobile": "966580472133",
+    "zone_cluster": "KAFD Phase 1 & 2",
+    "hub": "KAFD Phase 1 & 2",
+    "cluster_group": "Core Corporate Hubs",
+    "staffing_requirements": [
+      "Tea Boy",
+      "Pantry Staff",
+      "Cleaners"
+    ],
+    "intent_score": 98,
+    "date_added": "2026-09-14",
+    "status": "new",
+    "notes": "Newly fitted corporate office in KAFD Phase 1 & 2. Sector: Investment banks, RHQ headquarters & tier-1 consultancies."
+  },
+  {
+    "id": "al-enma solutions ksa_966551448532",
+    "company_name": "Al-Enma Solutions KSA",
+    "contact_person": "Turki Al-Amri",
+    "phone": "966551448532",
+    "saudi_mobile": "966551448532",
+    "zone_cluster": "Al Malqa Office Blocks",
+    "hub": "Al Malqa Office Blocks",
+    "cluster_group": "Core Corporate Hubs",
+    "staffing_requirements": [
+      "Cleaners",
+      "Pantry Staff"
+    ],
+    "intent_score": 85,
+    "date_added": "2026-09-16",
+    "status": "new",
+    "notes": "Newly fitted corporate office in Al Malqa Office Blocks. Sector: Executive clinics, private equity & venture studios."
+  },
+  {
+    "id": "al-faisaliah regional headquarters_966507707657",
+    "company_name": "Al-Faisaliah Regional Headquarters",
+    "contact_person": "Nasser Al-Otaibi",
+    "phone": "966507707657",
+    "saudi_mobile": "966507707657",
+    "zone_cluster": "Business Gate",
+    "hub": "Business Gate",
+    "cluster_group": "Core Corporate Hubs",
+    "staffing_requirements": [
+      "Cleaners",
+      "Pantry Staff"
+    ],
+    "intent_score": 83,
+    "date_added": "2026-09-16",
+    "status": "new",
+    "notes": "Newly fitted corporate office in Business Gate. Sector: Aerospace, enterprise software & diplomatic contractors."
+  },
+  {
+    "id": "al-oula solutions ksa_966542821606",
+    "company_name": "Al-Oula Solutions KSA",
+    "contact_person": "Sultan Al-Qahtani",
+    "phone": "966542821606",
+    "saudi_mobile": "966542821606",
+    "zone_cluster": "Riyadh Second Industrial City",
+    "hub": "Riyadh Second Industrial City",
+    "cluster_group": "Industrial HQs",
+    "staffing_requirements": [
+      "Tea Boy",
+      "Pantry Staff",
+      "Cleaners"
+    ],
+    "intent_score": 81,
+    "date_added": "2026-09-15",
+    "status": "new",
+    "notes": "Newly fitted corporate office in Riyadh Second Industrial City. Sector: Manufacturing HQs, pharma plants & engineering offices."
+  },
+  {
+    "id": "al-enma global investment group_966503711723",
+    "company_name": "Al-Enma Global Investment Group",
+    "contact_person": "Ziyad Al-Amri",
+    "phone": "966503711723",
+    "saudi_mobile": "966503711723",
+    "zone_cluster": "Al Olaya",
+    "hub": "Al Olaya",
+    "cluster_group": "Core Corporate Hubs",
+    "staffing_requirements": [
+      "Tea Boy"
+    ],
+    "intent_score": 91,
+    "date_added": "2026-09-16",
+    "status": "new",
+    "notes": "Newly fitted corporate office in Al Olaya. Sector: Financial towers & multinational branches."
+  },
+  {
+    "id": "thuraya tech innovations_966509374789",
+    "company_name": "Thuraya Tech Innovations",
+    "contact_person": "Khalid Al-Shehri",
+    "phone": "966509374789",
+    "saudi_mobile": "966509374789",
+    "zone_cluster": "Al Olaya",
+    "hub": "Al Olaya",
+    "cluster_group": "Core Corporate Hubs",
+    "staffing_requirements": [
+      "Tea Boy",
+      "Pantry Staff",
+      "Cleaners"
+    ],
+    "intent_score": 92,
+    "date_added": "2026-09-16",
+    "status": "new",
+    "notes": "Newly fitted corporate office in Al Olaya. Sector: Financial towers & multinational branches."
+  },
+  {
+    "id": "al-bayan healthcare management_966551432343",
+    "company_name": "Al-Bayan Healthcare Management",
+    "contact_person": "Mohammed Al-Subaie",
+    "phone": "966551432343",
+    "saudi_mobile": "966551432343",
+    "zone_cluster": "King Khalid Int'l Airport Logistics Zone",
+    "hub": "King Khalid Int'l Airport Logistics Zone",
+    "cluster_group": "Tech & Logistics Corridors",
+    "staffing_requirements": [
+      "Cleaners",
+      "Pantry Staff"
+    ],
+    "intent_score": 81,
+    "date_added": "2026-09-16",
+    "status": "new",
+    "notes": "Newly fitted corporate office in King Khalid Int'l Airport Logistics Zone. Sector: Air freight & international supply chain HQs."
+  },
+  {
+    "id": "al-oula tech innovations_966594312040",
+    "company_name": "Al-Oula Tech Innovations",
+    "contact_person": "Fahad Al-Shammari",
+    "phone": "966594312040",
+    "saudi_mobile": "966594312040",
+    "zone_cluster": "Al Khuzama",
+    "hub": "Al Khuzama",
+    "cluster_group": "Hotspot Boom Strip",
+    "staffing_requirements": [
+      "Tea Boy"
+    ],
+    "intent_score": 83,
+    "date_added": "2026-09-16",
+    "status": "new",
+    "notes": "Newly fitted corporate office in Al Khuzama. Sector: Executive suites & family offices."
+  },
+  {
+    "id": "tuwaiq digital systems_966530905073",
+    "company_name": "Tuwaiq Digital Systems",
+    "contact_person": "Tariq Al-Bishi",
+    "phone": "966530905073",
+    "saudi_mobile": "966530905073",
+    "zone_cluster": "King Fahd Rd",
+    "hub": "King Fahd Rd",
+    "cluster_group": "Core Corporate Hubs",
+    "staffing_requirements": [
+      "Tea Boy",
+      "Pantry Staff"
+    ],
+    "intent_score": 92,
+    "date_added": "2026-09-16",
+    "status": "new",
+    "notes": "Newly fitted corporate office in King Fahd Rd. Sector: Major corporate skyscrapers & insurance HQs."
+  },
+  {
+    "id": "al-enma digital systems_966556856492",
+    "company_name": "Al-Enma Digital Systems",
+    "contact_person": "Khalid Al-Dosari",
+    "phone": "966556856492",
+    "saudi_mobile": "966556856492",
+    "zone_cluster": "KAFD Phase 1 & 2",
+    "hub": "KAFD Phase 1 & 2",
+    "cluster_group": "Core Corporate Hubs",
+    "staffing_requirements": [
+      "Tea Boy",
+      "Pantry Staff",
+      "Cleaners"
+    ],
+    "intent_score": 93,
+    "date_added": "2026-09-15",
+    "status": "new",
+    "notes": "Newly fitted corporate office in KAFD Phase 1 & 2. Sector: Investment banks, RHQ headquarters & tier-1 consultancies."
+  },
+  {
+    "id": "riyadh vision tech innovations_966556021933",
+    "company_name": "Riyadh Vision Tech Innovations",
+    "contact_person": "Khalid Al-Shehri",
+    "phone": "966556021933",
+    "saudi_mobile": "966556021933",
+    "zone_cluster": "Business Gate",
+    "hub": "Business Gate",
+    "cluster_group": "Core Corporate Hubs",
+    "staffing_requirements": [
+      "Tea Boy",
+      "Pantry Staff"
+    ],
+    "intent_score": 91,
+    "date_added": "2026-09-14",
+    "status": "new",
+    "notes": "Newly fitted corporate office in Business Gate. Sector: Aerospace, enterprise software & diplomatic contractors."
+  }
+]
