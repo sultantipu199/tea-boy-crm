@@ -486,6 +486,40 @@ $hubBreakdown
         dateAdded: today,
         intentScore: 86,
       ),
+      // Secondary Bucket: Western & Eastern Hubs
+      Lead.create(
+        companyName: 'Red Sea Global Trade & Maritime',
+        contactPerson: 'Eng. Ziyad Al-Harbi',
+        saudiMobile: '966551122334',
+        hub: 'Jeddah Waterfront/Andalus',
+        staffingRequirements: ['Tea Boy', 'Pantry Staff'],
+        status: 'new',
+        notes: 'Regional maritime office suite requiring executive tea and board hospitality.',
+        dateAdded: today,
+        intentScore: 85,
+      ),
+      Lead.create(
+        companyName: 'Aramco EPC Energy Engineering',
+        contactPerson: 'Tariq Al-Dosari',
+        saudiMobile: '966540987654',
+        hub: 'Khobar Corniche/Logistics',
+        staffingRequirements: ['Tea Boy', 'Cleaners'],
+        status: 'new',
+        notes: 'Offshore engineering regional headquarters floor.',
+        dateAdded: yesterday,
+        intentScore: 84,
+      ),
+      Lead.create(
+        companyName: 'Eastern Industrial Central Depot',
+        contactPerson: 'Nasser Al-Qahtani',
+        saudiMobile: '966567123456',
+        hub: 'Dammam Industrial',
+        staffingRequirements: ['Cleaners'],
+        status: 'new',
+        notes: 'Central logistics and supply chain administration office.',
+        dateAdded: twoDaysAgo,
+        intentScore: 78,
+      ),
     ];
 
     for (final lead in initialLeads) {

@@ -3,7 +3,7 @@ import 'zones.dart';
 
 class LeadActivity {
   final String id;
-  final String type; // 'Call', 'WhatsApp', 'Visit', 'Quotation', 'Note'
+  final String type; // 'Call', 'WhatsApp', 'Email', 'Visit', 'Quotation', 'Note'
   final String date; // YYYY-MM-DD HH:mm
   final String note;
 
@@ -38,12 +38,15 @@ class Lead {
   final String companyName;
   final String contactPerson;
   final String saudiMobile; // strictly 9665xxxxxxxx
+  final String email; // Corporate procurement / HR email
   final String hub; // zone_cluster
+  final double? lat;
+  final double? lng;
   final List<String> staffingRequirements; // Cleaners, Pantry Staff, Tea Boy
   String status; // 'new' | 'contacted' | 'analyzed' | 'disqualified' | 'interested' | 'closed'
   String notes;
   final String dateAdded; // Formatted YYYY-MM-DD
-  String? contactedAt; // ISO String or YYYY-MM-DD HH:mm:ss when WhatsApp clicked
+  String? contactedAt; // ISO String or YYYY-MM-DD HH:mm:ss when WhatsApp / Email dispatched
   String? followUpDate; // Formatted YYYY-MM-DD
   int intentScore; // 0 - 100
   String? clientReply; // Stored pasted response from client
@@ -56,7 +59,10 @@ class Lead {
     required this.companyName,
     required this.contactPerson,
     required this.saudiMobile,
+    required this.email,
     required this.hub,
+    this.lat,
+    this.lng,
     required this.staffingRequirements,
     required this.status,
     required this.notes,
@@ -77,13 +83,20 @@ class Lead {
     if (digits.startsWith('00966')) {
       digits = digits.substring(2);
     } else if (digits.startsWith('05')) {
-      digits = '966' + digits.substring(1);
+      digits = '966${digits.substring(1)}';
     } else if (digits.startsWith('5') && digits.length == 9) {
-      digits = '966' + digits;
+      digits = '966$digits';
     } else if (!digits.startsWith('966') && digits.length == 9) {
-      digits = '966' + digits;
+      digits = '966$digits';
     }
     return digits;
+  }
+
+  /// Construct default corporate procurement email if not provided
+  static String defaultCorporateEmail(String companyName) {
+    final clean = companyName.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+    final handle = clean.isNotEmpty ? clean : 'corporate';
+    return 'procurement@$handle.sa';
   }
 
   /// Construct composite primary key for deduplication
@@ -97,7 +110,10 @@ class Lead {
     required String companyName,
     required String contactPerson,
     required String saudiMobile,
+    String? email,
     required String hub,
+    double? lat,
+    double? lng,
     required List<String> staffingRequirements,
     String status = 'new',
     String notes = '',
@@ -114,14 +130,21 @@ class Lead {
     final today = dateAdded ??
         DateTime.now().toIso8601String().split('T').first; // YYYY-MM-DD
     final zone = RiyadhZones.findZone(hub);
-    final calculatedIntent = intentScore ?? (60 + (zone?.defaultIntentBoost ?? 10));
+    final calculatedIntent =
+        intentScore ?? (60 + (zone?.defaultIntentBoost ?? 10));
+    final resolvedEmail = (email != null && email.trim().isNotEmpty)
+        ? email.trim()
+        : defaultCorporateEmail(companyName);
 
     return Lead(
       id: key,
       companyName: companyName.trim(),
       contactPerson: contactPerson.trim(),
       saudiMobile: sanitizePhone(saudiMobile),
+      email: resolvedEmail,
       hub: hub.trim(),
+      lat: lat ?? zone?.latitude,
+      lng: lng ?? zone?.longitude,
       staffingRequirements: staffingRequirements.isNotEmpty
           ? staffingRequirements
           : ['Tea Boy'],
@@ -155,13 +178,28 @@ class Lead {
     final isBlack = (map['is_blacklisted'] == true) ||
         (map['is_blacklisted']?.toString().toLowerCase() == 'true');
 
+    final compName = map['company_name']?.toString() ?? '';
+    final existingEmail = map['email']?.toString();
+    final resolvedEmail = (existingEmail != null && existingEmail.isNotEmpty)
+        ? existingEmail
+        : defaultCorporateEmail(compName);
+
+    double? parseCoord(dynamic val) {
+      if (val is num) return val.toDouble();
+      if (val != null) return double.tryParse(val.toString());
+      return null;
+    }
+
     return Lead(
       id: map['id']?.toString() ??
-          buildCompositeKey(map['company_name']?.toString() ?? '', phone),
-      companyName: map['company_name']?.toString() ?? '',
+          buildCompositeKey(compName, phone),
+      companyName: compName,
       contactPerson: map['contact_person']?.toString() ?? '',
       saudiMobile: sanitizePhone(phone),
+      email: resolvedEmail,
       hub: hubName,
+      lat: parseCoord(map['lat']),
+      lng: parseCoord(map['lng']),
       staffingRequirements: (map['staffing_requirements'] as List<dynamic>?)
               ?.map((e) => e.toString())
               .toList() ??
@@ -193,8 +231,11 @@ class Lead {
       'contact_person': contactPerson,
       'saudi_mobile': saudiMobile,
       'phone': saudiMobile,
+      'email': email,
       'hub': hub,
       'zone_cluster': hub,
+      'lat': lat,
+      'lng': lng,
       'staffing_requirements': staffingRequirements,
       'status': status.toLowerCase(),
       'notes': notes,
@@ -210,6 +251,14 @@ class Lead {
   }
 
   Lead copyWith({
+    String? companyName,
+    String? contactPerson,
+    String? saudiMobile,
+    String? email,
+    String? hub,
+    double? lat,
+    double? lng,
+    List<String>? staffingRequirements,
     String? status,
     String? notes,
     String? contactedAt,
@@ -222,11 +271,14 @@ class Lead {
   }) {
     return Lead(
       id: id,
-      companyName: companyName,
-      contactPerson: contactPerson,
-      saudiMobile: saudiMobile,
-      hub: hub,
-      staffingRequirements: staffingRequirements,
+      companyName: companyName ?? this.companyName,
+      contactPerson: contactPerson ?? this.contactPerson,
+      saudiMobile: saudiMobile ?? this.saudiMobile,
+      email: email ?? this.email,
+      hub: hub ?? this.hub,
+      lat: lat ?? this.lat,
+      lng: lng ?? this.lng,
+      staffingRequirements: staffingRequirements ?? this.staffingRequirements,
       status: (status ?? this.status).toLowerCase(),
       notes: notes ?? this.notes,
       dateAdded: dateAdded,
@@ -278,5 +330,31 @@ class Lead {
       }
     }
     return total;
+  }
+
+  /// Executive Pitch Email Subject (RFC-compliant)
+  String get corporateEmailSubject {
+    return 'VIP Office Hospitality & Facility Staffing Proposal | $companyName';
+  }
+
+  /// Executive Pitch Email Body (RFC-compliant)
+  String get corporateEmailBody {
+    final staffList = staffingRequirements.join(', ');
+    return '''السيد/السيدة: $contactPerson المحترم،
+تحية طيبة وبعد،
+
+يسرنا في شركة الشاي والأعمال (TEA BOY B2B) أن نقدم لكم عرض خدمات الضيافة المكتبية والكوادر التشغيلية المخصصة لمقركم الموقر في $hub ($companyName).
+
+نحن نوفر كوادر مدربة بأعلى المعايير السعودية في مجالات:
+• الكوادر المطلوبة: $staffList
+• عقود مرنة معتمدة ومطابقة لمتطلبات وزارة الموارد البشرية ونظام العمل السعودي.
+• زي موحد راقي، تدريب ضيافة بروتوكولية، وإشراف ميداني مستمر على مدار الساعة.
+
+يسعدنا ترتيب موعد لمعاينة المقر أو بدء فترة تجريبية خلال هذا الأسبوع.
+
+شاكرين ومقدرين حسن تعاونكم،
+فريق تطوير الأعمال B2B | TEA BOY KSA
+الرياض - المملكة العربية السعودية
+هاتف: +966 50 123 4567''';
   }
 }

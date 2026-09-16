@@ -43,6 +43,11 @@ TARGET_CLUSTERS = {
         {"name": "Al Sulay Industrial Zone", "sector": "Central depot administration & industrial offices", "intent_base": 78},
         {"name": "Riyadh Second Industrial City", "sector": "Manufacturing HQs, pharma plants & engineering offices", "intent_base": 81},
     ],
+    "Western & Eastern Hubs": [
+        {"name": "Jeddah Waterfront/Andalus", "sector": "Maritime trade, luxury corporate hospitality & regional RHQ branches", "intent_base": 86},
+        {"name": "Khobar Corniche/Logistics", "sector": "Oil & gas services, maritime logistics & regional engineering HQs", "intent_base": 85},
+        {"name": "Dammam Industrial", "sector": "Industrial supply chain, engineering fabrication & central depots", "intent_base": 80},
+    ],
 }
 
 COMPANY_NAME_TEMPLATES = [

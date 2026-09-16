@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../models/lead.dart';
 import '../models/zones.dart';
 import '../services/storage_service.dart';
-import '../services/whatsapp_service.dart';
 import '../theme/app_theme.dart';
 
 class AddLeadScreen extends StatefulWidget {
@@ -508,7 +507,7 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
                 ),
                 const SizedBox(height: 6),
                 DropdownButtonFormField<String>(
-                  value: _selectedHub,
+                  initialValue: _selectedHub,
                   decoration: const InputDecoration(
                     prefixIcon: Icon(Icons.location_on_outlined, size: 18, color: AppTheme.royalGold),
                   ),

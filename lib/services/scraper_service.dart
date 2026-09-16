@@ -184,6 +184,35 @@ class ScraperService {
       'intent_score': 81,
       'notes': 'Executive administration building for pharmaceutical plant.',
     },
+
+    // --- Cluster 5: Western & Eastern Hubs ---
+    {
+      'company_name': 'Jeddah Waterfront Luxury Shipping RHQ',
+      'contact_person': 'Capt. Hani Al-Ghamdi',
+      'phone': '966557788112',
+      'hub': 'Jeddah Waterfront/Andalus',
+      'staffing': ['Tea Boy', 'Pantry Staff'],
+      'intent_score': 88,
+      'notes': 'Red Sea luxury corporate suite and maritime executive boardroom.',
+    },
+    {
+      'company_name': 'Khobar Corniche Offshore Petroleum Services',
+      'contact_person': 'Faisal Al-Tamimi',
+      'phone': '966548899223',
+      'hub': 'Khobar Corniche/Logistics',
+      'staffing': ['Tea Boy', 'Cleaners'],
+      'intent_score': 86,
+      'notes': 'Engineering operations floor overlooking Khobar Corniche.',
+    },
+    {
+      'company_name': 'Dammam Industrial Port Logistics Terminal',
+      'contact_person': 'Sami Al-Khatib',
+      'phone': '966569900334',
+      'hub': 'Dammam Industrial',
+      'staffing': ['Cleaners', 'Pantry Staff'],
+      'intent_score': 80,
+      'notes': 'Port administration and customs clearance corporate building.',
+    },
   ];
 
   /// Scrape fresh corporate leads across Greater Riyadh clusters

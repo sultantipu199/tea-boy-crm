@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../models/lead.dart';
+import '../services/dispatch_service.dart';
 import '../services/whatsapp_service.dart';
 import '../theme/app_theme.dart';
 
@@ -18,9 +20,9 @@ class _QuotationCalculatorDialogState extends State<QuotationCalculatorDialog> {
   int _pantryCount = 0;
   int _cleanerCount = 1;
 
-  double _teaBoyRate = 4200.0;
-  double _pantryRate = 3800.0;
-  double _cleanerRate = 3200.0;
+  final double _teaBoyRate = 4200.0;
+  final double _pantryRate = 3800.0;
+  final double _cleanerRate = 3200.0;
 
   String _selectedShift = 'صباحية (08:00 ص - 04:00 م)';
 
@@ -33,7 +35,6 @@ class _QuotationCalculatorDialogState extends State<QuotationCalculatorDialog> {
   @override
   void initState() {
     super.initState();
-    // Initialize based on lead requirements
     final reqs = widget.lead.staffingRequirements;
     _teaBoyCount = reqs.contains('Tea Boy') ? 1 : 0;
     _pantryCount = reqs.contains('Pantry Staff') ? 1 : 0;
@@ -62,13 +63,13 @@ class _QuotationCalculatorDialogState extends State<QuotationCalculatorDialog> {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
+        color: AppTheme.withAlphaFactor(AppTheme.frostedCharcoalSlate, 0.9),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppTheme.borderGrey),
+        border: Border.all(color: AppTheme.cyberBorder),
       ),
       child: Row(
         children: [
-          Icon(icon, size: 20, color: AppTheme.saudiEmerald),
+          Icon(icon, size: 20, color: AppTheme.electricCyan),
           const SizedBox(width: 10),
           Expanded(
             child: Column(
@@ -77,32 +78,34 @@ class _QuotationCalculatorDialogState extends State<QuotationCalculatorDialog> {
                 Text(
                   title,
                   style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      color: AppTheme.slateNavy),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: AppTheme.crispAlabaster,
+                  ),
                 ),
                 Text(
                   '${rate.toStringAsFixed(0)} ر.س / شهرياً',
-                  style: const TextStyle(fontSize: 11, color: AppTheme.textMuted),
+                  style: const TextStyle(fontSize: 11, color: AppTheme.mutedSilver),
                 ),
               ],
             ),
           ),
           IconButton(
             icon: const Icon(Icons.remove_circle_outline,
-                size: 20, color: AppTheme.textMuted),
+                size: 20, color: AppTheme.mutedSilver),
             onPressed: count > 0 ? () => onChanged(count - 1) : null,
           ),
           Text(
             '$count',
             style: const TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w800,
-                color: AppTheme.slateNavy),
+              fontSize: 15,
+              fontWeight: FontWeight.w800,
+              color: AppTheme.crispAlabaster,
+            ),
           ),
           IconButton(
             icon: const Icon(Icons.add_circle_outline,
-                size: 20, color: AppTheme.saudiEmerald),
+                size: 20, color: AppTheme.electricCyan),
             onPressed: () => onChanged(count + 1),
           ),
         ],
@@ -110,10 +113,29 @@ class _QuotationCalculatorDialogState extends State<QuotationCalculatorDialog> {
     );
   }
 
+  String _buildQuoteText() {
+    return WhatsAppService.generateItemizedQuotationPitch(
+      companyName: widget.lead.companyName,
+      contactPerson: widget.lead.contactPerson,
+      hub: widget.lead.hub,
+      teaBoyCount: _teaBoyCount,
+      pantryCount: _pantryCount,
+      cleanerCount: _cleanerCount,
+      teaBoyRate: _teaBoyRate,
+      pantryRate: _pantryRate,
+      cleanerRate: _cleanerRate,
+      shiftType: _selectedShift,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      backgroundColor: AppTheme.obsidianVoid,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: const BorderSide(color: AppTheme.cyberBorder),
+      ),
       child: Container(
         constraints: const BoxConstraints(maxWidth: 500),
         padding: const EdgeInsets.all(20),
@@ -133,25 +155,25 @@ class _QuotationCalculatorDialogState extends State<QuotationCalculatorDialog> {
                       Text(
                         'SAR Quotation Calculator',
                         style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w800,
-                            color: AppTheme.slateNavy),
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                          color: AppTheme.crispAlabaster,
+                        ),
                       ),
                     ],
                   ),
                   IconButton(
-                    icon: const Icon(Icons.close, size: 20),
+                    icon: const Icon(Icons.close, size: 20, color: AppTheme.mutedSilver),
                     onPressed: () => Navigator.pop(context),
                   ),
                 ],
               ),
               Text(
                 'Instant pricing proposal for ${widget.lead.companyName} (${widget.lead.hub})',
-                style: const TextStyle(fontSize: 12, color: AppTheme.textMuted),
+                style: const TextStyle(fontSize: 12, color: AppTheme.mutedSilver),
               ),
               const SizedBox(height: 14),
 
-              // Staff count rows
               _buildCounterRow(
                 title: 'Tea Boys (ضيافة مكتبية)',
                 icon: Icons.emoji_food_beverage,
@@ -176,26 +198,38 @@ class _QuotationCalculatorDialogState extends State<QuotationCalculatorDialog> {
 
               const SizedBox(height: 10),
 
-              // Shift selector
               const Text(
                 'Shift / Working Hours',
-                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: AppTheme.crispAlabaster,
+                ),
               ),
               const SizedBox(height: 4),
               DropdownButtonFormField<String>(
-                value: _selectedShift,
+                initialValue: _selectedShift,
                 isExpanded: true,
+                dropdownColor: AppTheme.frostedCharcoalSlate,
                 decoration: InputDecoration(
                   contentPadding:
                       const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                   isDense: true,
                   border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8)),
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: const BorderSide(color: AppTheme.cyberBorder),
+                  ),
                 ),
                 items: _shifts
                     .map((s) => DropdownMenuItem(
                           value: s,
-                          child: Text(s, style: const TextStyle(fontSize: 12)),
+                          child: Text(
+                            s,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: AppTheme.crispAlabaster,
+                            ),
+                          ),
                         ))
                     .toList(),
                 onChanged: (val) {
@@ -209,9 +243,9 @@ class _QuotationCalculatorDialogState extends State<QuotationCalculatorDialog> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF0FDF4),
+                  color: AppTheme.withAlphaFactor(AppTheme.frostedCharcoalSlate, 0.9),
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: const Color(0xFFBBF7D0)),
+                  border: Border.all(color: AppTheme.cyberBorder),
                 ),
                 child: Column(
                   children: [
@@ -219,10 +253,12 @@ class _QuotationCalculatorDialogState extends State<QuotationCalculatorDialog> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         const Text('Subtotal (قبل الضريبة):',
-                            style: TextStyle(fontSize: 12)),
+                            style: TextStyle(fontSize: 12, color: AppTheme.mutedSilver)),
                         Text('${_subtotal.toStringAsFixed(0)} SAR',
                             style: const TextStyle(
-                                fontSize: 13, fontWeight: FontWeight.w600)),
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: AppTheme.crispAlabaster)),
                       ],
                     ),
                     const SizedBox(height: 4),
@@ -230,29 +266,33 @@ class _QuotationCalculatorDialogState extends State<QuotationCalculatorDialog> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         const Text('VAT (ضريبة 15%):',
-                            style: TextStyle(fontSize: 12)),
+                            style: TextStyle(fontSize: 12, color: AppTheme.mutedSilver)),
                         Text('${_vat.toStringAsFixed(0)} SAR',
                             style: const TextStyle(
-                                fontSize: 13, fontWeight: FontWeight.w600)),
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: AppTheme.crispAlabaster)),
                       ],
                     ),
-                    const Divider(height: 12, color: Color(0xFF86EFAC)),
+                    const Divider(height: 12, color: AppTheme.cyberBorder),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         const Text(
                           'Total Monthly (الإجمالي):',
                           style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w800,
-                              color: AppTheme.saudiEmerald),
+                            fontSize: 13,
+                            fontWeight: FontWeight.w800,
+                            color: AppTheme.mintEmerald,
+                          ),
                         ),
                         Text(
                           '${_total.toStringAsFixed(0)} SAR',
                           style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w900,
-                              color: AppTheme.saudiEmerald),
+                            fontSize: 16,
+                            fontWeight: FontWeight.w900,
+                            color: AppTheme.mintEmerald,
+                          ),
                         ),
                       ],
                     ),
@@ -262,45 +302,61 @@ class _QuotationCalculatorDialogState extends State<QuotationCalculatorDialog> {
 
               const SizedBox(height: 16),
 
-              // 1-Tap Dispatch Button
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.saudiEmerald,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
+              // Dual Dispatch Buttons: WhatsApp & RFC Email
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.mintEmerald,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                      onPressed: _total > 0
+                          ? () async {
+                              final quote = _buildQuoteText();
+                              Navigator.pop(context);
+                              await Clipboard.setData(ClipboardData(text: quote));
+                              await DispatchService.launchWhatsApp(
+                                phone: widget.lead.saudiMobile,
+                                message: quote,
+                              );
+                            }
+                          : null,
+                      icon: const Icon(Icons.send_rounded, size: 16),
+                      label: const Text(
+                        'WhatsApp Quote',
+                        style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
+                      ),
+                    ),
                   ),
-                  onPressed: _total > 0
-                      ? () {
-                          final quotePitch =
-                              WhatsAppService.generateItemizedQuotationPitch(
-                            companyName: widget.lead.companyName,
-                            contactPerson: widget.lead.contactPerson,
-                            hub: widget.lead.hub,
-                            teaBoyCount: _teaBoyCount,
-                            pantryCount: _pantryCount,
-                            cleanerCount: _cleanerCount,
-                            teaBoyRate: _teaBoyRate,
-                            pantryRate: _pantryRate,
-                            cleanerRate: _cleanerRate,
-                            shiftType: _selectedShift,
-                          );
-
-                          Navigator.pop(context);
-                          WhatsAppService.copyScriptAndDispatch(
-                            context: context,
-                            phone: widget.lead.saudiMobile,
-                            message: quotePitch,
-                            companyName: widget.lead.companyName,
-                          );
-                        }
-                      : null,
-                  icon: const Icon(Icons.send_rounded, size: 16),
-                  label: const Text(
-                    'Copy Quote & Launch WhatsApp',
-                    style: TextStyle(fontWeight: FontWeight.w700),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.royalIris,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                      onPressed: _total > 0
+                          ? () async {
+                              final quote = _buildQuoteText();
+                              Navigator.pop(context);
+                              await DispatchService.launchEmail(
+                                email: widget.lead.email,
+                                subject: 'Official Quote: ${widget.lead.companyName} Hospitality',
+                                body: quote,
+                              );
+                            }
+                          : null,
+                      icon: const Icon(Icons.email_outlined, size: 16),
+                      label: const Text(
+                        'RFC Email Quote',
+                        style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
+                      ),
+                    ),
                   ),
-                ),
+                ],
               ),
             ],
           ),

@@ -7,9 +7,9 @@ class AiScoreBadge extends StatelessWidget {
   const AiScoreBadge({super.key, required this.score});
 
   Color _getScoreColor() {
-    if (score >= 80) return AppTheme.saudiEmerald;
-    if (score >= 60) return AppTheme.statusContacted;
-    return AppTheme.statusDisqualified;
+    if (score >= 80) return AppTheme.electricCyan;
+    if (score >= 60) return AppTheme.amberAccent;
+    return AppTheme.crimsonAccent;
   }
 
   @override
@@ -18,9 +18,9 @@ class AiScoreBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
+        color: AppTheme.withAlphaFactor(color, 0.12),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withOpacity(0.35)),
+        border: Border.all(color: AppTheme.withAlphaFactor(color, 0.35)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

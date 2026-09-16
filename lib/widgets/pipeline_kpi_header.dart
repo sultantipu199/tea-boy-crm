@@ -10,7 +10,8 @@ class PipelineKpiHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final totalLeads = leads.length;
-    final hotDeals = leads.where((l) => (l.aiAnalysis?.dealScore ?? l.intentScore) >= 75).length;
+    final hotDeals =
+        leads.where((l) => (l.aiAnalysis?.dealScore ?? l.intentScore) >= 75).length;
     final closedDeals = leads.where((l) => l.isClosed).length;
 
     // Estimate monthly pipeline volume
@@ -32,18 +33,18 @@ class PipelineKpiHeader extends StatelessWidget {
               value: '$totalLeads',
               subtitle: '$closedDeals Closed',
               icon: Icons.pie_chart_outline,
-              accentColor: AppTheme.saudiEmerald,
+              accentColor: AppTheme.electricCyan,
             ),
           ),
           const SizedBox(width: 8),
           // Hot AI Deals KPI
           Expanded(
             child: _buildKpiCard(
-              title: 'Hot Hotspots',
+              title: 'Hot Hubs',
               value: '$hotDeals',
               subtitle: 'Score ≥ 75%',
               icon: Icons.auto_awesome,
-              accentColor: AppTheme.royalGold,
+              accentColor: AppTheme.amberAccent,
             ),
           ),
           const SizedBox(width: 8),
@@ -53,8 +54,8 @@ class PipelineKpiHeader extends StatelessWidget {
               title: 'Monthly Volume',
               value: '${(totalMonthlyVal / 1000).toStringAsFixed(0)}k SAR',
               subtitle: 'Est. Contracts',
-              icon: Icons.attach_money,
-              accentColor: AppTheme.slateNavy,
+              icon: Icons.monetization_on_outlined,
+              accentColor: AppTheme.mintEmerald,
             ),
           ),
         ],
@@ -72,14 +73,14 @@ class PipelineKpiHeader extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppTheme.withAlphaFactor(AppTheme.frostedCharcoalSlate, 0.85),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppTheme.borderGrey),
+        border: Border.all(color: AppTheme.cyberBorder),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
+            color: Colors.black.withValues(alpha: 0.25),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
           ),
         ],
       ),
@@ -94,7 +95,7 @@ class PipelineKpiHeader extends StatelessWidget {
                 style: const TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
-                  color: AppTheme.textMuted,
+                  color: AppTheme.mutedSilver,
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -115,7 +116,7 @@ class PipelineKpiHeader extends StatelessWidget {
             subtitle,
             style: const TextStyle(
               fontSize: 10,
-              color: AppTheme.textMuted,
+              color: AppTheme.mutedSilver,
             ),
           ),
         ],

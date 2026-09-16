@@ -38,6 +38,7 @@ migrate_working_dir/
 **/android/local.properties
 **/android/app/build/
 **/android/app/upload-keystore.jks
+**/android/**/GeneratedPluginRegistrant.java
 .gradle/
 
 # Exceptions to flutter repo

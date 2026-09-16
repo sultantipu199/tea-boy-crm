@@ -9,19 +9,19 @@ class StatusBadge extends StatelessWidget {
   Color _getStatusColor() {
     switch (status.toLowerCase()) {
       case 'new':
-        return AppTheme.statusNew;
+        return AppTheme.electricCyan;
       case 'contacted':
-        return AppTheme.statusContacted;
+        return AppTheme.amberAccent;
       case 'analyzed':
         return AppTheme.royalGold;
       case 'interested':
-        return AppTheme.statusInterested;
+        return AppTheme.mintEmerald;
       case 'closed':
-        return AppTheme.statusClosed;
+        return AppTheme.royalIris;
       case 'disqualified':
-        return AppTheme.statusDisqualified;
+        return AppTheme.crimsonAccent;
       default:
-        return AppTheme.textMuted;
+        return AppTheme.mutedSilver;
     }
   }
 
@@ -35,9 +35,9 @@ class StatusBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
+        color: AppTheme.withAlphaFactor(color, 0.14),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: AppTheme.withAlphaFactor(color, 0.35)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -48,6 +48,12 @@ class StatusBadge extends StatelessWidget {
             decoration: BoxDecoration(
               color: color,
               shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: AppTheme.withAlphaFactor(color, 0.6),
+                  blurRadius: 4,
+                ),
+              ],
             ),
           ),
           const SizedBox(width: 6),

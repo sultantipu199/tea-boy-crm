@@ -2,8 +2,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/lead.dart';
-import '../models/ai_analysis.dart';
+import '../services/dispatch_service.dart';
 import '../services/gemini_service.dart';
+import '../services/geo_service.dart';
 import '../services/storage_service.dart';
 import '../services/whatsapp_service.dart';
 import '../theme/app_theme.dart';
@@ -437,8 +438,15 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
   }
 
   Widget _buildHeaderCard(Lead lead) {
+    final proximityBadge = GeoService.instance.formatDistanceBadge(lead);
+
     return Card(
       elevation: 1,
+      color: AppTheme.withAlphaFactor(AppTheme.frostedCharcoalSlate, 0.9),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(14),
+        side: const BorderSide(color: AppTheme.cyberBorder),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -450,11 +458,14 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: AppTheme.saudiEmerald.withOpacity(0.1),
+                    color: AppTheme.withAlphaFactor(AppTheme.electricCyan, 0.15),
                     borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: AppTheme.withAlphaFactor(AppTheme.electricCyan, 0.3),
+                    ),
                   ),
                   child: const Icon(Icons.business,
-                      color: AppTheme.saudiEmerald, size: 24),
+                      color: AppTheme.electricCyan, size: 24),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -466,31 +477,48 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
                         style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w800,
-                          color: AppTheme.textDark,
+                          color: AppTheme.crispAlabaster,
                         ),
                       ),
-                      const SizedBox(height: 4),
-                      Row(
+                      const SizedBox(height: 6),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 4,
                         children: [
-                          const Icon(Icons.location_on,
-                              size: 14, color: AppTheme.royalGold),
-                          const SizedBox(width: 4),
-                          Text(
-                            lead.hub,
-                            style: const TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              color: AppTheme.slateSurface,
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 7, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: AppTheme.withAlphaFactor(
+                                  AppTheme.electricCyan, 0.12),
+                              borderRadius: BorderRadius.circular(5),
+                              border: Border.all(
+                                color: AppTheme.withAlphaFactor(
+                                    AppTheme.electricCyan, 0.3),
+                                width: 0.8,
+                              ),
+                            ),
+                            child: Text(
+                              proximityBadge,
+                              style: const TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: AppTheme.electricCyan,
+                              ),
                             ),
                           ),
-                          const SizedBox(width: 12),
-                          const Icon(Icons.calendar_today,
-                              size: 13, color: AppTheme.textMuted),
-                          const SizedBox(width: 4),
-                          Text(
-                            'Added: ${lead.dateAdded}',
-                            style: const TextStyle(
-                                fontSize: 12, color: AppTheme.textMuted),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.calendar_today,
+                                  size: 12, color: AppTheme.mutedSilver),
+                              const SizedBox(width: 3),
+                              Text(
+                                'Added: ${lead.dateAdded}',
+                                style: const TextStyle(
+                                    fontSize: 11, color: AppTheme.mutedSilver),
+                              ),
+                            ],
                           ),
                         ],
                       ),
@@ -499,11 +527,11 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
                 ),
               ],
             ),
-            const Divider(height: 24, color: AppTheme.borderGrey),
-            // Contact Row
+            const Divider(height: 24, color: AppTheme.cyberBorder),
+            // Contact & Email Rows
             Row(
               children: [
-                const Icon(Icons.person, size: 16, color: AppTheme.textMuted),
+                const Icon(Icons.person, size: 15, color: AppTheme.mutedSilver),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
@@ -511,47 +539,107 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
                         ? lead.contactPerson
                         : 'Corporate Contact',
                     style: const TextStyle(
-                        fontSize: 14, fontWeight: FontWeight.w600),
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w600,
+                      color: AppTheme.crispAlabaster,
+                    ),
                   ),
                 ),
                 Text(
                   WhatsAppService.formatForDisplay(lead.saudiMobile),
                   style: const TextStyle(
-                    fontSize: 14,
+                    fontSize: 13.5,
                     fontWeight: FontWeight.w700,
-                    color: AppTheme.saudiEmerald,
+                    color: AppTheme.electricCyan,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Row(
+              children: [
+                const Icon(Icons.alternate_email,
+                    size: 15, color: AppTheme.royalIris),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    lead.email,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppTheme.mutedSilver,
+                    ),
+                  ),
+                ),
+                InkWell(
+                  onTap: () => DispatchService.launchEmail(
+                    email: lead.email,
+                    subject: lead.corporateEmailSubject,
+                    body: lead.corporateEmailBody,
+                  ),
+                  child: const Text(
+                    '1-Tap Email',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: AppTheme.royalIris,
+                      decoration: TextDecoration.underline,
+                    ),
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 14),
+            // Multi-channel Action Row
             Row(
               children: [
                 Expanded(
                   child: OutlinedButton.icon(
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 8),
-                      side: const BorderSide(color: AppTheme.saudiEmerald),
+                      side: const BorderSide(color: AppTheme.electricCyan),
                     ),
                     onPressed: () =>
-                        WhatsAppService.launchPhoneCall(lead.saudiMobile),
+                        DispatchService.launchCall(lead.saudiMobile),
                     icon: const Icon(Icons.phone,
-                        size: 15, color: AppTheme.saudiEmerald),
+                        size: 15, color: AppTheme.electricCyan),
                     label: const Text('Call',
                         style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
-                            color: AppTheme.saudiEmerald)),
+                            color: AppTheme.electricCyan)),
                   ),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      side: const BorderSide(color: AppTheme.royalIris),
+                    ),
+                    onPressed: () => DispatchService.launchEmail(
+                      email: lead.email,
+                      subject: lead.corporateEmailSubject,
+                      body: lead.corporateEmailBody,
+                    ),
+                    icon: const Icon(Icons.email_outlined,
+                        size: 15, color: AppTheme.royalIris),
+                    label: const Text('Email',
+                        style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: AppTheme.royalIris)),
+                  ),
+                ),
+                const SizedBox(width: 6),
                 Expanded(
                   child: OutlinedButton.icon(
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 8),
                       side: const BorderSide(color: AppTheme.royalGold),
                     ),
-                    onPressed: () => WhatsAppService.launchMaps(lead.hub),
+                    onPressed: () => DispatchService.launchMaps(
+                      query: '${lead.hub} Saudi Arabia',
+                    ),
                     icon: const Icon(Icons.map_outlined,
                         size: 15, color: AppTheme.royalGold),
                     label: const Text('Navigate',
@@ -561,24 +649,25 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
                             color: AppTheme.royalGold)),
                   ),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 6),
                 Expanded(
                   child: ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 8),
-                      backgroundColor: AppTheme.slateNavy,
+                      backgroundColor: AppTheme.frostedCharcoalSlate,
+                      foregroundColor: AppTheme.crispAlabaster,
                     ),
                     onPressed: () => showDialog(
                       context: context,
                       builder: (_) => QuotationCalculatorDialog(lead: lead),
                     ),
                     icon: const Icon(Icons.calculate_outlined,
-                        size: 15, color: Colors.white),
+                        size: 15, color: AppTheme.royalGold),
                     label: const Text('SAR Quote',
                         style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
-                            color: Colors.white)),
+                            color: AppTheme.crispAlabaster)),
                   ),
                 ),
               ],
@@ -726,8 +815,8 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
         borderRadius: BorderRadius.circular(14),
         side: BorderSide(
           color: ai != null
-              ? AppTheme.royalGold.withOpacity(0.5)
-              : AppTheme.borderGrey,
+              ? AppTheme.withAlphaFactor(AppTheme.royalGold, 0.5)
+              : AppTheme.cyberBorder,
           width: ai != null ? 1.5 : 1,
         ),
       ),
@@ -1217,7 +1306,7 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
                       Container(
                         padding: const EdgeInsets.all(6),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF25D366).withOpacity(0.12),
+                          color: AppTheme.withAlphaFactor(AppTheme.mintEmerald, 0.15),
                           shape: BoxShape.circle,
                         ),
                         child: const Icon(Icons.chat,
