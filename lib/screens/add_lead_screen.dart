@@ -507,7 +507,8 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
                 ),
                 const SizedBox(height: 6),
                 DropdownButtonFormField<String>(
-                  initialValue: _selectedHub,
+                  // ignore: deprecated_member_use
+                  value: _selectedHub,
                   decoration: const InputDecoration(
                     prefixIcon: Icon(Icons.location_on_outlined, size: 18, color: AppTheme.royalGold),
                   ),

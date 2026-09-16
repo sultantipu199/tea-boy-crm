@@ -208,7 +208,8 @@ class _QuotationCalculatorDialogState extends State<QuotationCalculatorDialog> {
               ),
               const SizedBox(height: 4),
               DropdownButtonFormField<String>(
-                initialValue: _selectedShift,
+                // ignore: deprecated_member_use
+                value: _selectedShift,
                 isExpanded: true,
                 dropdownColor: AppTheme.frostedCharcoalSlate,
                 decoration: InputDecoration(

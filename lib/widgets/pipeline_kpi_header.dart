@@ -78,7 +78,8 @@ class PipelineKpiHeader extends StatelessWidget {
         border: Border.all(color: AppTheme.cyberBorder),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.25),
+            // ignore: deprecated_member_use
+            color: Colors.black.withOpacity(0.25),
             blurRadius: 8,
             offset: const Offset(0, 3),
           ),

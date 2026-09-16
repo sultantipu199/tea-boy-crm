@@ -41,7 +41,8 @@ class AppTheme {
 
   // Helper for backward-compatible and zero-precision-loss alpha
   static Color withAlphaFactor(Color color, double opacity) {
-    return color.withValues(alpha: opacity.clamp(0.0, 1.0));
+    // ignore: deprecated_member_use
+    return color.withOpacity(opacity.clamp(0.0, 1.0));
   }
 
   /// Glassmorphic frosted container decoration
@@ -63,7 +64,8 @@ class AppTheme {
           : null,
       boxShadow: [
         BoxShadow(
-          color: Colors.black.withValues(alpha: 0.35),
+          // ignore: deprecated_member_use
+          color: Colors.black.withOpacity(0.35),
           blurRadius: 16,
           offset: const Offset(0, 6),
         ),
@@ -98,14 +100,6 @@ class AppTheme {
           fontSize: 18,
           fontWeight: FontWeight.w700,
           letterSpacing: 0.3,
-        ),
-      ),
-      cardTheme: CardThemeData(
-        color: withAlphaFactor(frostedCharcoalSlate, 0.85),
-        elevation: 0,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(14),
-          side: const BorderSide(color: cyberBorder, width: 1.0),
         ),
       ),
       chipTheme: ChipThemeData(
