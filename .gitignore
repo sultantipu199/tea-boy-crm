@@ -40,6 +40,7 @@ migrate_working_dir/
 **/android/app/upload-keystore.jks
 **/android/**/GeneratedPluginRegistrant.java
 .gradle/
+.github/workflows/daily_scraper.yml
 
 # Exceptions to flutter repo
 !/packages/flutter_tools/test/data/dart_dependencies_test/**/.packages
