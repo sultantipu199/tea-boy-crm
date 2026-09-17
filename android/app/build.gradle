@@ -24,7 +24,7 @@ if (flutterVersionName == null) {
 
 android {
     namespace "com.teaboy.crm"
-    compileSdk 34
+    compileSdk flutter.compileSdkVersion
     ndkVersion "25.1.8937393"
 
     compileOptions {
@@ -77,7 +77,7 @@ configurations.all {
 }
 
 tasks.whenTaskAdded { task ->
-    if (task.name.contains("AarMetadata") || task.name.contains("checkReleaseAarMetadata")) {
+    if (task.name.contains("AarMetadata") || task.name.contains("checkReleaseAarMetadata") || task.name.startsWith("cleanMerge")) {
         task.enabled = false
     }
 }

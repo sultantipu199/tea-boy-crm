@@ -5,6 +5,7 @@ import 'package:tea_boy_crm/models/ai_analysis.dart';
 import 'package:tea_boy_crm/services/dispatch_service.dart';
 import 'package:tea_boy_crm/services/gemini_service.dart';
 import 'package:tea_boy_crm/services/geo_service.dart';
+import 'package:tea_boy_crm/services/scraper_service.dart';
 
 void main() {
   group('Enterprise Saudi B2B CRM Core Unit Tests', () {
@@ -185,6 +186,43 @@ void main() {
       expect(contacted.isNew, isFalse);
       expect(contacted.isContacted, isTrue);
       expect(contacted.contactedAt, isNotNull);
+    });
+
+    test('Manual Scraper Dynamic Fresh Listing Generation & Normalization', () {
+      final freshListings = ScraperService.instance.generateDynamicFreshListings(count: 20);
+      expect(freshListings.length, equals(20));
+
+      for (final item in freshListings) {
+        expect(item['company_name'], isNotEmpty);
+        expect(item['contact_person'], isNotEmpty);
+        expect(item['phone'], startsWith('9665'));
+        expect((item['phone'] as String).length, equals(12));
+        expect(item['hub'], isNotEmpty);
+        expect(item['intent_score'], greaterThanOrEqualTo(65));
+        expect(item['intent_score'], lessThanOrEqualTo(98));
+        expect((item['staffing'] as List), isNotEmpty);
+      }
+    });
+
+    test('Manual Scraper Category & Hub Scope Filtering', () {
+      final hotspotListings = ScraperService.instance.generateDynamicFreshListings(
+        count: 10,
+        clusterCategory: RiyadhClusterCategory.hotspots,
+      );
+      expect(hotspotListings.length, equals(10));
+      for (final item in hotspotListings) {
+        final hub = item['hub'] as String;
+        expect(RiyadhZones.matchesCategory(hub, RiyadhClusterCategory.hotspots), isTrue);
+      }
+
+      final kafdListings = ScraperService.instance.generateDynamicFreshListings(
+        count: 5,
+        targetHub: 'KAFD Phase 1 & 2',
+      );
+      expect(kafdListings.length, equals(5));
+      for (final item in kafdListings) {
+        expect(item['hub'], equals('KAFD Phase 1 & 2'));
+      }
     });
   });
 }

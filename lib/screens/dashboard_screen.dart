@@ -46,17 +46,19 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
     super.dispose();
   }
 
-  Future<void> _runScraper() async {
+  Future<void> _runScraper({int count = 15}) async {
+    await HapticFeedback.mediumImpact();
     setState(() => _isScraping = true);
 
     final selectedCat = ref.read(selectedCategoryProvider);
     final result = await ScraperService.instance
-        .scrapeLeads(clusterCategory: selectedCat);
+        .scrapeLeads(clusterCategory: selectedCat, dynamicCount: count);
 
     // Refresh leads in Riverpod
     ref.read(leadsProvider.notifier).refresh();
 
     setState(() => _isScraping = false);
+    await HapticFeedback.heavyImpact();
 
     if (mounted) {
       showDialog(
@@ -69,10 +71,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
           ),
           title: Row(
             children: const [
-              Icon(Icons.hub_outlined, color: AppTheme.electricCyan),
+              Icon(Icons.bolt, color: AppTheme.mintEmerald, size: 22),
               SizedBox(width: 8),
               Text(
-                'KSA Corporate Ingestion',
+                'Corporate Scraper Ingestion',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
@@ -86,7 +88,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Scraped corporate listings for ${selectedCat.label}.',
+                'Ingested corporate listings for ${selectedCat.label}.',
                 style: const TextStyle(fontSize: 13, color: AppTheme.mutedSilver),
               ),
               const SizedBox(height: 14),
@@ -122,7 +124,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
               if (result.addedCompanyNames.isNotEmpty) ...[
                 const SizedBox(height: 12),
                 const Text(
-                  'Newly Added Corporate Offices:',
+                  'Newly Ingested Corporate Offices:',
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
@@ -148,10 +150,26 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text('OK',
+              child: const Text('Close',
                   style: TextStyle(
-                      color: AppTheme.electricCyan,
-                      fontWeight: FontWeight.w700)),
+                      color: AppTheme.mutedSilver,
+                      fontWeight: FontWeight.w600)),
+            ),
+            ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.electricCyan,
+                foregroundColor: AppTheme.obsidianVoid,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              onPressed: () {
+                Navigator.pop(ctx);
+                _tabController.animateTo(0);
+              },
+              icon: const Icon(Icons.flash_on, size: 16),
+              label: const Text('View New Leads',
+                  style: TextStyle(fontWeight: FontWeight.w800)),
             ),
           ],
         ),
@@ -421,17 +439,17 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
             onPressed: _exportLeadsCsv,
           ),
           IconButton(
-            tooltip: 'Run Ingestion Pipeline',
+            tooltip: 'Manual Scraper (⚡ Ingest Leads)',
             icon: _isScraping
                 ? const SizedBox(
                     width: 18,
                     height: 18,
                     child: CircularProgressIndicator(
-                      color: AppTheme.electricCyan,
+                      color: AppTheme.mintEmerald,
                       strokeWidth: 2,
                     ),
                   )
-                : const Icon(Icons.cloud_download_outlined, size: 21),
+                : const Icon(Icons.bolt, color: AppTheme.mintEmerald, size: 22),
             onPressed: _isScraping ? null : _runScraper,
           ),
           IconButton(
@@ -524,6 +542,124 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
 
                 // Pipeline KPI Header
                 PipelineKpiHeader(leads: allLeads),
+
+                // Executive Quick Manual Scraper Action Bar
+                Container(
+                  margin: const EdgeInsets.fromLTRB(16, 8, 16, 6),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: AppTheme.withAlphaFactor(
+                        AppTheme.frostedCharcoalSlate, 0.92),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color:
+                          AppTheme.withAlphaFactor(AppTheme.mintEmerald, 0.4),
+                      width: 1,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppTheme.withAlphaFactor(
+                            AppTheme.mintEmerald, 0.08),
+                        blurRadius: 10,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: AppTheme.withAlphaFactor(
+                              AppTheme.mintEmerald, 0.15),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(Icons.bolt,
+                            color: AppTheme.mintEmerald, size: 20),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                const Text(
+                                  'Manual Scraper',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w800,
+                                    color: AppTheme.crispAlabaster,
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 6, vertical: 1.5),
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.withAlphaFactor(
+                                        AppTheme.electricCyan, 0.15),
+                                    borderRadius: BorderRadius.circular(4),
+                                    border: Border.all(
+                                      color: AppTheme.withAlphaFactor(
+                                          AppTheme.electricCyan, 0.5),
+                                      width: 0.6,
+                                    ),
+                                  ),
+                                  child: Text(
+                                    selectedCat.label,
+                                    style: const TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w700,
+                                      color: AppTheme.electricCyan,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 2),
+                            const Text(
+                              'Instant KSA corporate offices ingestion',
+                              style: TextStyle(
+                                  fontSize: 11, color: AppTheme.mutedSilver),
+                            ),
+                          ],
+                        ),
+                      ),
+                      ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppTheme.mintEmerald,
+                          foregroundColor: Colors.white,
+                          elevation: 2,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 8),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        onPressed: _isScraping ? null : _runScraper,
+                        icon: _isScraping
+                            ? const SizedBox(
+                                width: 13,
+                                height: 13,
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Icon(Icons.download, size: 15),
+                        label: Text(
+                          _isScraping ? 'Scraping...' : 'Scrape Now',
+                          style: const TextStyle(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
 
                 // Segmented Tabs Bar
                 Container(
@@ -711,19 +847,50 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
           ),
         ),
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        backgroundColor: AppTheme.electricCyan,
-        foregroundColor: AppTheme.obsidianVoid,
-        icon: const Icon(Icons.add, size: 18),
-        label: const Text('Add Lead',
-            style: TextStyle(fontWeight: FontWeight.w800)),
-        onPressed: () async {
-          await Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const AddLeadScreen()),
-          );
-          ref.read(leadsProvider.notifier).refresh();
-        },
+      floatingActionButton: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Dedicated Manual Scraper Floating Action Button
+          FloatingActionButton.extended(
+            heroTag: 'fab_manual_scraper',
+            backgroundColor: AppTheme.mintEmerald,
+            foregroundColor: Colors.white,
+            elevation: 4,
+            icon: _isScraping
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2,
+                    ),
+                  )
+                : const Icon(Icons.bolt, size: 18),
+            label: Text(
+              _isScraping ? 'Scraping...' : 'Scrape Leads',
+              style: const TextStyle(fontWeight: FontWeight.w800),
+            ),
+            onPressed: _isScraping ? null : _runScraper,
+          ),
+          const SizedBox(width: 10),
+          // Add Lead Floating Action Button
+          FloatingActionButton.extended(
+            heroTag: 'fab_add_lead',
+            backgroundColor: AppTheme.electricCyan,
+            foregroundColor: AppTheme.obsidianVoid,
+            elevation: 4,
+            icon: const Icon(Icons.add, size: 18),
+            label: const Text('Add Lead',
+                style: TextStyle(fontWeight: FontWeight.w800)),
+            onPressed: () async {
+              await Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const AddLeadScreen()),
+              );
+              ref.read(leadsProvider.notifier).refresh();
+            },
+          ),
+        ],
       ),
     );
   }

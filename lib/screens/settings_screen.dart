@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../models/lead.dart';
+import '../models/zones.dart';
 import '../services/gemini_service.dart';
+import '../services/scraper_service.dart';
 import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
 
@@ -16,6 +18,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _isTestingKey = false;
   String? _testResultStatus;
   bool _obscureKey = true;
+  bool _isScraping = false;
+  RiyadhClusterCategory _selectedScraperCluster = RiyadhClusterCategory.all;
 
   @override
   void initState() {
@@ -165,6 +169,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
         );
         setState(() {});
       }
+    }
+  }
+
+  Future<void> _runManualScrape() async {
+    setState(() => _isScraping = true);
+    final result = await ScraperService.instance.scrapeLeads(
+      clusterCategory: _selectedScraperCluster,
+      dynamicCount: 15,
+    );
+    StorageService.instance.revision.value++;
+    setState(() => _isScraping = false);
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Scraping completed: +${result.newLeadsAdded} fresh leads added (${result.skippedDuplicates} duplicates, ${result.skippedBlacklisted} blacklisted).',
+          ),
+          backgroundColor: AppTheme.saudiEmerald,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
     }
   }
 
@@ -353,6 +378,101 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             ),
                           ),
                         ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 16),
+
+              // Manual Corporate Scraper Pipeline Card
+              Card(
+                elevation: 1,
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: const [
+                          Icon(Icons.bolt, color: AppTheme.saudiEmerald, size: 20),
+                          SizedBox(width: 8),
+                          Text(
+                            'Manual Corporate Scraper Pipeline',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                              color: AppTheme.slateNavy,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      const Text(
+                        'Trigger on-demand scraping across Greater Riyadh & KSA commercial clusters at any time. Generates fresh registrations, strictly deduplicates via (company_sanitizedPhone), and excludes blacklisted contacts.',
+                        style: TextStyle(fontSize: 12, color: AppTheme.textMuted),
+                      ),
+                      const SizedBox(height: 12),
+                      const Text(
+                        'Target Cluster / Scope:',
+                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+                      ),
+                      const SizedBox(height: 6),
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 6,
+                        children: RiyadhClusterCategory.values.map((cat) {
+                          final isSel = cat == _selectedScraperCluster;
+                          return ChoiceChip(
+                            label: Text(
+                              cat.label,
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: isSel ? FontWeight.w700 : FontWeight.w500,
+                              ),
+                            ),
+                            selected: isSel,
+                            onSelected: (_) {
+                              setState(() => _selectedScraperCluster = cat);
+                            },
+                            selectedColor: AppTheme.saudiEmerald,
+                            labelStyle: TextStyle(
+                              color: isSel ? Colors.white : AppTheme.slateNavy,
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                      const SizedBox(height: 14),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppTheme.saudiEmerald,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          onPressed: _isScraping ? null : _runManualScrape,
+                          icon: _isScraping
+                              ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : const Icon(Icons.bolt, size: 18),
+                          label: Text(
+                            _isScraping
+                                ? 'Scraping Corporate Listings...'
+                                : 'Run Manual Scraper Now',
+                            style: const TextStyle(fontWeight: FontWeight.w800),
+                          ),
+                        ),
                       ),
                     ],
                   ),
