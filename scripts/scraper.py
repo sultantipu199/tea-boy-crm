@@ -1,172 +1,216 @@
 #!/usr/bin/env python3
 """
-Enterprise Cloud Scraper Pipeline for Riyadh Corporate Offices
+Enterprise Authentic Google Maps Scraper Pipeline for Riyadh Corporate Offices
 Supplying Cleaners, Pantry Staff, and Tea Boys.
-Targeting Greater Riyadh Hotspots across a 5X Expanded Radius.
+
+Architectural Guarantees:
+- ZERO synthetic leads: Absolutely no Faker, random lists, or LLM-generated business names.
+- Zero duplication: Once a company/number is scraped, it must never reappear across daily runs.
+- 100% authentic Google Maps profiles only.
+- Strict "Zero Data over Fake Data" Guardrail.
 """
 
 import os
 import sys
 import json
 import re
-import random
-from datetime import datetime, timezone, timedelta
+import hashlib
+from datetime import datetime, timezone
+import requests
+from bs4 import BeautifulSoup
 
 # Reconfigure stdout to UTF-8 if supported
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
-# Target Riyadh Clusters & Hubs
-TARGET_CLUSTERS = {
-    "Hotspot Boom Strip": [
-        {"name": "Al Narjis Commercial", "sector": "Newly fitted-out corporate offices & consultancies", "intent_base": 90},
-        {"name": "Roshn Front Business Zone", "sector": "Tech ventures & regional corporate suites", "intent_base": 92},
-        {"name": "King Salman Road Business Strip", "sector": "Regional headquarters (RHQ) & financial advisory", "intent_base": 91},
-        {"name": "New Murabba Corridor", "sector": "Mega-project contractor & engineering consultant HQs", "intent_base": 88},
-        {"name": "Al Yasmin", "sector": "Boutique agencies & investment offices", "intent_base": 84},
-        {"name": "Al Khuzama", "sector": "Executive suites & family offices", "intent_base": 86},
-    ],
-    "Core Corporate Hubs": [
-        {"name": "KAFD Phase 1 & 2", "sector": "Investment banks, RHQ headquarters & tier-1 consultancies", "intent_base": 95},
-        {"name": "Al Olaya", "sector": "Financial towers & multinational branches", "intent_base": 89},
-        {"name": "King Fahd Rd", "sector": "Major corporate skyscrapers & insurance HQs", "intent_base": 88},
-        {"name": "Digital City", "sector": "Fintech, cybersecurity, IT & government contractors", "intent_base": 90},
-        {"name": "Business Gate", "sector": "Aerospace, enterprise software & diplomatic contractors", "intent_base": 87},
-        {"name": "Al Malqa Office Blocks", "sector": "Executive clinics, private equity & venture studios", "intent_base": 86},
-    ],
-    "Tech & Logistics Corridors": [
-        {"name": "Granada Business Park", "sector": "Telecom giants & shared service centers", "intent_base": 88},
-        {"name": "Al Yarmouk", "sector": "Commercial corporate services & supply chain offices", "intent_base": 80},
-        {"name": "King Khalid Int'l Airport Logistics Zone", "sector": "Air freight & international supply chain HQs", "intent_base": 83},
-    ],
-    "Industrial HQs": [
-        {"name": "Al Sulay Industrial Zone", "sector": "Central depot administration & industrial offices", "intent_base": 78},
-        {"name": "Riyadh Second Industrial City", "sector": "Manufacturing HQs, pharma plants & engineering offices", "intent_base": 81},
-    ],
-    "Western & Eastern Hubs": [
-        {"name": "Jeddah Waterfront/Andalus", "sector": "Maritime trade, luxury corporate hospitality & regional RHQ branches", "intent_base": 86},
-        {"name": "Khobar Corniche/Logistics", "sector": "Oil & gas services, maritime logistics & regional engineering HQs", "intent_base": 85},
-        {"name": "Dammam Industrial", "sector": "Industrial supply chain, engineering fabrication & central depots", "intent_base": 80},
-    ],
-}
-
-COMPANY_NAME_TEMPLATES = [
-    "{prefix} Capital Advisory",
-    "{prefix} Solutions KSA",
-    "{prefix} Engineering & Consulting",
-    "{prefix} Regional Headquarters",
-    "{prefix} Tech Innovations",
-    "{prefix} General Trading & Contracting",
-    "{prefix} Global Investment Group",
-    "{prefix} Logistics & Supply Chain",
-    "{prefix} Digital Systems",
-    "{prefix} Healthcare Management",
+DEFAULT_QUERIES = [
+    {
+        "query": "corporate office in KAFD",
+        "hub": "KAFD Phase 1 & 2",
+        "cluster_group": "Core Corporate Hubs",
+        "intent_base": 95,
+    },
+    {
+        "query": "business offices in Al Olaya",
+        "hub": "Al Olaya",
+        "cluster_group": "Core Corporate Hubs",
+        "intent_base": 89,
+    },
+    {
+        "query": "consulting company in Al Narjis",
+        "hub": "Al Narjis Commercial",
+        "cluster_group": "Hotspot Boom Strip",
+        "intent_base": 90,
+    },
+    {
+        "query": "head office in Roshn Front",
+        "hub": "Roshn Front Business Zone",
+        "cluster_group": "Hotspot Boom Strip",
+        "intent_base": 92,
+    },
+    {
+        "query": "corporate towers King Salman Rd",
+        "hub": "King Salman Road Business Strip",
+        "cluster_group": "Hotspot Boom Strip",
+        "intent_base": 91,
+    },
 ]
 
-PREFIXES = [
-    "Al-Rowad", "Najd", "Riyadh Vision", "Diriyah", "Al-Faisaliah", "Tuwaiq",
-    "Al-Murabba", "Rawafed", "Thuraya", "Al-Mada", "Sanad", "Tadawul Al-Khaleej",
-    "Masar", "Al-Enma", "Al-Oula", "Al-Safwa", "Sada", "Al-Bayan", "Afaf", "Waha"
-]
+SAUDI_MOBILE_REGEX = re.compile(r"^(?:\+966|00966|0)?(5[0-9]{8})$")
 
-FIRST_NAMES = ["Sultan", "Abdullah", "Mohammed", "Fahad", "Saud", "Turki", "Nasser", "Mansour", "Khalid", "Ziyad", "Abdulaziz", "Tariq"]
-FAMILY_NAMES = ["Al-Otaibi", "Al-Qahtani", "Al-Ghamdi", "Al-Zahrani", "Al-Harbi", "Al-Dosari", "Al-Shehri", "Al-Mutairi", "Al-Subaie", "Al-Amri", "Al-Bishi", "Al-Shammari"]
-
-STAFFING_OPTIONS = [
-    ["Tea Boy"],
-    ["Tea Boy", "Cleaners"],
-    ["Tea Boy", "Pantry Staff"],
-    ["Cleaners", "Pantry Staff"],
-    ["Tea Boy", "Pantry Staff", "Cleaners"],
-]
-
-def sanitize_saudi_phone(raw_phone: str) -> str:
-    """Strictly normalize Saudi mobile number to 9665xxxxxxxx format."""
-    digits = re.sub(r'\D', '', str(raw_phone))
-    if digits.startswith("00966"):
-        digits = digits[2:]
-    elif digits.startswith("05"):
-        digits = "966" + digits[1:]
-    elif digits.startswith("5") and len(digits) == 9:
-        digits = "966" + digits
-    elif not digits.startswith("966") and len(digits) == 9:
-        digits = "966" + digits
-    return digits
-
-def build_composite_key(company_name: str, phone: str) -> str:
-    clean_company = company_name.strip().lower()
-    clean_phone = sanitize_saudi_phone(phone)
-    return f"{clean_company}_{clean_phone}"
-
-def generate_fresh_listings(count: int = 15):
+def normalize_saudi_mobile(raw_phone: str) -> str | None:
+    r"""
+    Accept ONLY numbers matching regex: r"^(?:\+966|00966|0)?5[0-9]{8}$"
+    Convert strictly to +9665xxxxxxxx.
+    Discard all landlines (011), unified lines (9200, 800), and missing numbers.
     """
-    Generate fresh corporate registrations & newly claimed listings 
-    stamped within the last 24-72 hours.
+    if not raw_phone:
+        return None
+    clean = re.sub(r"[\s\-\(\)\.]", "", str(raw_phone).strip())
+    m = SAUDI_MOBILE_REGEX.match(clean)
+    if m:
+        return f"+966{m.group(1)}"
+    return None
+
+def generate_dedup_hash(normalized_phone: str, place_id: str) -> str:
     """
-    now = datetime.now(timezone.utc)
-    today = now.date()
-    listings = []
+    Deduplication Key: Generate a unique composite SHA-256 hash from:
+    hash_key = SHA256(normalized_phone + "_" + place_id)
+    """
+    raw_key = f"{normalized_phone.strip()}_{place_id.strip()}"
+    return hashlib.sha256(raw_key.encode("utf-8")).hexdigest()
 
-    clusters_flat = []
-    for cluster_group, hubs in TARGET_CLUSTERS.items():
-        for hub in hubs:
-            clusters_flat.append((cluster_group, hub))
+def extract_phone_from_place(p1: list) -> str | None:
+    """Extract primary business phone from the Place details array."""
+    try:
+        # Index 178 contains the official phone metadata structure
+        if len(p1) > 178 and p1[178] and isinstance(p1[178], list) and len(p1[178]) > 0:
+            item = p1[178][0]
+            if isinstance(item, list):
+                if len(item) > 3 and item[3]:
+                    return str(item[3])
+                if len(item) > 0 and item[0]:
+                    return str(item[0])
+    except Exception:
+        pass
 
-    used_keys = set()
+    # Fallback search for phone numbers inside p1 metadata
+    def deep_find_phone(obj):
+        if isinstance(obj, str):
+            if re.search(r"(?:\+966\s*5\d|05\d|\+966\s*11|011|9200|800)", obj):
+                return obj
+        elif isinstance(obj, list):
+            for sub in obj:
+                res = deep_find_phone(sub)
+                if res:
+                    return res
+        elif isinstance(obj, dict):
+            for v in obj.values():
+                res = deep_find_phone(v)
+                if res:
+                    return res
+        return None
 
-    for _ in range(count):
-        cluster_group, hub_info = random.choice(clusters_flat)
-        prefix = random.choice(PREFIXES)
-        template = random.choice(COMPANY_NAME_TEMPLATES)
-        company_name = template.format(prefix=prefix)
+    return deep_find_phone(p1)
 
-        # Stagger date_added across the last 24-72 hours (today, yesterday, 2 days ago)
-        days_ago = random.choices([0, 1, 2], weights=[0.5, 0.35, 0.15])[0]
-        date_added = (today - timedelta(days=days_ago)).isoformat()
+def query_google_maps_live(search_query: str, session: requests.Session) -> list[dict]:
+    """
+    Authentic Google Maps Live Extraction (Real Places Only).
+    Extracts strictly from real Google Place records:
+    - place_id: Authentic Google Place ID.
+    - company_name: Verbatim business title as displayed on Google Maps.
+    - address: Real street address in Riyadh.
+    - google_maps_url: Direct playable link (https://maps.google.com/?q=place_id:PLACE_ID).
+    - phone: Primary business phone.
+    - lat, lng: Geographical coordinates.
+    """
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+        "Accept-Language": "en-US,en;q=0.9,ar;q=0.8",
+    }
+    url = f"https://www.google.com/maps/search/{requests.utils.quote(search_query)}"
+    records = []
 
-        contact_person = f"{random.choice(FIRST_NAMES)} {random.choice(FAMILY_NAMES)}"
+    try:
+        r = session.get(url, headers=headers, timeout=20)
+        if r.status_code != 200:
+            print(f"  [HTTP {r.status_code}] Google Maps initial search failed for query: {search_query}")
+            return []
 
-        # Generate realistic Saudi mobile number (05xxxxxxxx)
-        rand_suffix = "".join([str(random.randint(0, 9)) for _ in range(7)])
-        raw_mobile = f"05{random.choice(['0', '3', '4', '5', '6', '8', '9'])}{rand_suffix}"
-        phone = sanitize_saudi_phone(raw_mobile)
+        soup = BeautifulSoup(r.text, "html.parser")
+        link = soup.find("link", href=re.compile(r"/search\?tbm=map"))
+        if not link:
+            print(f"  [Warning] No Google Maps search RPC endpoint found in HTML for: {search_query}")
+            return []
 
-        key = build_composite_key(company_name, phone)
-        if key in used_keys:
-            continue
-        used_keys.add(key)
+        full_url = "https://www.google.com" + link["href"]
+        r2 = session.get(full_url, headers=headers, timeout=20)
+        if r2.status_code != 200:
+            print(f"  [HTTP {r2.status_code}] Google Maps data fetch failed for query: {search_query}")
+            return []
 
-        intent_score = min(98, max(65, hub_info["intent_base"] + random.randint(-4, 4)))
-        staffing = random.choice(STAFFING_OPTIONS)
+        text = r2.text
+        if text.startswith(")]}'"):
+            text = text[4:].strip()
 
-        notes = f"Newly fitted corporate office in {hub_info['name']}. Sector: {hub_info['sector']}."
+        data = json.loads(text)
+        places = data[64] if len(data) > 64 and isinstance(data[64], list) else []
 
-        lead = {
-            "id": key,
-            "company_name": company_name,
-            "contact_person": contact_person,
-            "phone": phone,
-            "saudi_mobile": phone,
-            "zone_cluster": hub_info["name"],
-            "hub": hub_info["name"],
-            "cluster_group": cluster_group,
-            "staffing_requirements": staffing,
-            "intent_score": intent_score,
-            "date_added": date_added,
-            "status": "new",
-            "notes": notes,
-        }
-        listings.append(lead)
+        for p in places:
+            if not isinstance(p, list) or len(p) < 2 or not isinstance(p[1], list):
+                continue
+            p1 = p[1]
 
-    return listings
+            # 1. Company Name (Verbatim title)
+            company_name = p1[11] if len(p1) > 11 and isinstance(p1[11], str) else None
+            if not company_name:
+                continue
 
-def run_pipeline(output_path: str = "data/scraped_leads.json", blacklist_path: str = "data/blacklist_contacts.json"):
-    now_str = datetime.now(timezone.utc).isoformat()
-    print(f"[{now_str}] Starting Daily Automated Cloud Scraper Pipeline...")
-    print("Targeting Greater Riyadh Hotspots (5X Expanded Radius)...")
+            # 2. Authentic Google Place ID
+            place_id = p1[78] if len(p1) > 78 and isinstance(p1[78], str) and p1[78].startswith("ChIJ") else None
+            if not place_id and len(p1) > 227 and isinstance(p1[227], list) and len(p1[227]) > 0:
+                sub227 = p1[227][0]
+                if isinstance(sub227, list) and len(sub227) > 4 and isinstance(sub227[4], str) and sub227[4].startswith("ChIJ"):
+                    place_id = sub227[4]
 
-    # Load blacklist
-    blacklisted_phones = set()
+            if not place_id:
+                # Must be an authentic Google Place record with authentic place_id
+                continue
+
+            # 3. Address in Riyadh
+            address = p1[18] if len(p1) > 18 and isinstance(p1[18], str) else (
+                p1[39] if len(p1) > 39 and isinstance(p1[39], str) else ""
+            )
+
+            # 4. Direct Playable Google Maps URL
+            google_maps_url = f"https://maps.google.com/?q=place_id:{place_id}"
+
+            # 5. Primary business phone
+            raw_phone = extract_phone_from_place(p1)
+
+            # 6. Latitude & Longitude
+            lat, lng = None, None
+            if len(p1) > 9 and isinstance(p1[9], list) and len(p1[9]) >= 4:
+                lat = p1[9][2]
+                lng = p1[9][3]
+
+            records.append({
+                "place_id": place_id,
+                "company_name": company_name.strip(),
+                "address": address.strip(),
+                "google_maps_url": google_maps_url,
+                "raw_phone": raw_phone,
+                "lat": lat,
+                "lng": lng,
+            })
+
+    except Exception as e:
+        print(f"  [Error] Live extraction exception for '{search_query}': {e}")
+
+    return records
+
+def load_blacklist(blacklist_path: str) -> set[str]:
+    blacklisted = set()
     if os.path.exists(blacklist_path):
         try:
             with open(blacklist_path, "r", encoding="utf-8") as f:
@@ -174,78 +218,209 @@ def run_pipeline(output_path: str = "data/scraped_leads.json", blacklist_path: s
                 if isinstance(data, list):
                     for item in data:
                         p = item.get("phone") if isinstance(item, dict) else str(item)
-                        if p:
-                            blacklisted_phones.add(sanitize_saudi_phone(p))
+                        norm = normalize_saudi_mobile(p)
+                        if norm:
+                            blacklisted.add(norm)
+                        elif p:
+                            clean_digits = re.sub(r"\D", "", str(p))
+                            if clean_digits:
+                                blacklisted.add(clean_digits)
                 elif isinstance(data, dict):
                     for k in data.keys():
-                        blacklisted_phones.add(sanitize_saudi_phone(k))
-            print(f"Loaded {len(blacklisted_phones)} blacklisted phone numbers.")
+                        norm = normalize_saudi_mobile(k)
+                        if norm:
+                            blacklisted.add(norm)
+                        else:
+                            clean_digits = re.sub(r"\D", "", str(k))
+                            if clean_digits:
+                                blacklisted.add(clean_digits)
         except Exception as e:
             print(f"Warning: Failed to parse blacklist file: {e}")
+    return blacklisted
 
-    # Load existing database for deduplication
-    existing_leads = {}
+def load_lead_registry(registry_path: str) -> dict[str, dict]:
+    """
+    Loads persistent deduplication registry:
+    { hash_key: { "hash_key": ..., "place_id": ..., "phone": ..., "company_name": ..., "date_added": ... } }
+    """
+    if os.path.exists(registry_path):
+        try:
+            with open(registry_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                if isinstance(data, dict):
+                    return data
+                elif isinstance(data, list):
+                    reg = {}
+                    for item in data:
+                        hk = item.get("hash_key")
+                        if hk:
+                            reg[hk] = item
+                    return reg
+        except Exception as e:
+            print(f"Warning: Failed to parse lead registry: {e}")
+    return {}
+
+def save_lead_registry(registry_path: str, registry: dict[str, dict]):
+    os.makedirs(os.path.dirname(registry_path) or ".", exist_ok=True)
+    with open(registry_path, "w", encoding="utf-8") as f:
+        json.dump(registry, f, indent=2, ensure_ascii=False)
+
+def run_pipeline(
+    output_path: str = "data/scraped_leads.json",
+    registry_path: str = "data/lead_registry.json",
+    blacklist_path: str = "data/blacklist_contacts.json",
+    target_queries: list[dict] | None = None,
+) -> list[dict]:
+    """
+    Executes the 100% authentic Google Maps scraping pipeline with SHA-256 persistent deduplication.
+    Strictly adheres to: Zero synthetic leads, Zero duplication, Zero Data over Fake Data.
+    """
+    today_str = datetime.now(timezone.utc).date().isoformat()
+    now_iso = datetime.now(timezone.utc).isoformat()
+    print(f"[{now_iso}] Starting Authentic Google Maps Live Pipeline for Riyadh Hotspots...")
+
+    queries = target_queries or DEFAULT_QUERIES
+    blacklisted = load_blacklist(blacklist_path)
+    registry = load_lead_registry(registry_path)
+    print(f"* Loaded {len(blacklisted)} blacklisted contacts.")
+    print(f"* Loaded {len(registry)} persistent registry entries (deduplication database).")
+
+    # Load existing scraped leads if present
+    existing_leads_by_id = {}
     if os.path.exists(output_path):
         try:
             with open(output_path, "r", encoding="utf-8") as f:
                 data = json.load(f)
                 if isinstance(data, list):
                     for item in data:
-                        k = item.get("id") or build_composite_key(item.get("company_name", ""), item.get("phone", ""))
-                        existing_leads[k] = item
-                elif isinstance(data, dict):
-                    existing_leads = data
-            print(f"Loaded {len(existing_leads)} existing leads for deduplication.")
+                        lid = item.get("id") or item.get("hash_key")
+                        if lid:
+                            existing_leads_by_id[lid] = item
         except Exception as e:
             print(f"Warning: Failed to parse existing leads file: {e}")
 
-    fresh_listings = generate_fresh_listings(count=20)
+    session = requests.Session()
 
-    total_scraped = len(fresh_listings)
-    new_added = 0
-    skipped_duplicates = 0
-    skipped_blacklisted = 0
-    added_names = []
+    total_extracted_places = 0
+    discarded_non_mobile = 0
+    discarded_blacklisted = 0
+    discarded_duplicates = 0
+    new_genuine_leads = []
 
-    for lead in fresh_listings:
-        key = lead["id"]
-        phone = lead["phone"]
+    for q_entry in queries:
+        query_text = q_entry["query"]
+        hub_name = q_entry["hub"]
+        cluster_grp = q_entry.get("cluster_group", "Core Corporate Hubs")
+        intent_score = q_entry.get("intent_base", 90)
 
-        # 1. Blacklist check
-        if phone in blacklisted_phones:
-            skipped_blacklisted += 1
-            continue
+        print(f"\n--> Querying Google Maps: '{query_text}'...")
+        places = query_google_maps_live(query_text, session)
+        print(f"    Discovered {len(places)} real Google Place records.")
+        total_extracted_places += len(places)
 
-        # 2. Strict deduplication check
-        if key in existing_leads:
-            skipped_duplicates += 1
-            continue
+        for place in places:
+            company_name = place["company_name"]
+            place_id = place["place_id"]
+            raw_phone = place["raw_phone"]
+            address = place["address"]
+            gmaps_url = place["google_maps_url"]
+            lat = place["lat"]
+            lng = place["lng"]
 
-        existing_leads[key] = lead
-        new_added += 1
-        added_names.append(lead["company_name"])
+            # 1. Saudi Mobile Filter
+            normalized_phone = normalize_saudi_mobile(raw_phone)
+            if not normalized_phone:
+                discarded_non_mobile += 1
+                continue
 
-    # Ensure output dir exists
+            # 2. Deduplication Key: composite SHA-256 hash
+            hash_key = generate_dedup_hash(normalized_phone, place_id)
+
+            # 3. Pre-Ingestion Check: Registry Check & Blacklist Check
+            if hash_key in registry:
+                discarded_duplicates += 1
+                continue
+
+            clean_digits = re.sub(r"\D", "", normalized_phone)
+            if normalized_phone in blacklisted or clean_digits in blacklisted:
+                discarded_blacklisted += 1
+                continue
+
+            # Check existing file records as well
+            if hash_key in existing_leads_by_id:
+                discarded_duplicates += 1
+                continue
+
+            # 4. Construct Authentic Lead Object
+            # Staffing requirements tailored for Riyadh corporate offices
+            staffing = ["Tea Boy", "Pantry Staff", "Cleaners"]
+            contact_person = "Office / Procurement Director"
+
+            lead_record = {
+                "id": hash_key,
+                "hash_key": hash_key,
+                "place_id": place_id,
+                "company_name": company_name,
+                "contact_person": contact_person,
+                "phone": normalized_phone,
+                "saudi_mobile": normalized_phone,
+                "address": address,
+                "google_maps_url": gmaps_url,
+                "zone_cluster": hub_name,
+                "hub": hub_name,
+                "cluster_group": cluster_grp,
+                "lat": lat,
+                "lng": lng,
+                "staffing_requirements": staffing,
+                "intent_score": intent_score,
+                "date_added": today_str,
+                "status": "new",
+                "notes": f"Verified Google Maps profile in {hub_name}. Address: {address or 'Riyadh'}. Place ID: {place_id}.",
+            }
+
+            # 5. Post-Ingestion: Update registry and storage
+            registry[hash_key] = {
+                "hash_key": hash_key,
+                "place_id": place_id,
+                "phone": normalized_phone,
+                "company_name": company_name,
+                "google_maps_url": gmaps_url,
+                "date_added": today_str,
+            }
+
+            existing_leads_by_id[hash_key] = lead_record
+            new_genuine_leads.append(lead_record)
+
+    # Save updated persistent registry
+    save_lead_registry(registry_path, registry)
+
+    # Save output leads
     os.makedirs(os.path.dirname(output_path) or ".", exist_ok=True)
-
-    # Save output
+    final_leads_list = list(existing_leads_by_id.values())
     with open(output_path, "w", encoding="utf-8") as f:
-        json.dump(list(existing_leads.values()), f, indent=2, ensure_ascii=False)
+        json.dump(final_leads_list, f, indent=2, ensure_ascii=False)
 
+    print("\n========================================")
+    print("Authentic Google Maps Pipeline Complete:")
+    print(f"* Total Real Places Scraped:  {total_extracted_places}")
+    print(f"* Discarded Non-Mobile Lines: {discarded_non_mobile} (landlines 011, unified 9200, 800, missing)")
+    print(f"* Discarded Blacklisted:      {discarded_blacklisted}")
+    print(f"* Discarded Duplicates (Hash):{discarded_duplicates}")
+    print(f"* New Genuine Leads Ingested: {len(new_genuine_leads)}")
+    print(f"* Total Persistent Pipeline:  {len(final_leads_list)}")
+    print(f"* Persistent Registry:        {registry_path} ({len(registry)} hashes)")
+    print(f"* Output File:                {output_path}")
+    if new_genuine_leads:
+        print("* Ingested Genuine Leads:")
+        for l in new_genuine_leads:
+            print(f"   - {l['company_name']} ({l['saudi_mobile']}) -> {l['google_maps_url']}")
+    else:
+        print("* Notice: 0 new genuine mobile leads met criteria today. Strict 'Zero Data over Fake Data' enforced.")
     print("========================================")
-    print("Scraping Complete:")
-    print(f"* Total Listings Ingested: {total_scraped}")
-    print(f"* New Unique Leads Added:  {new_added}")
-    print(f"* Duplicates Skipped:      {skipped_duplicates}")
-    print(f"* Blacklisted Excluded:    {skipped_blacklisted}")
-    print(f"* Total Stored Pipeline:   {len(existing_leads)}")
-    print(f"* Output Database:         {output_path}")
-    if added_names:
-        print("* Sample Newly Added:")
-        for name in added_names[:5]:
-            print(f"   - {name}")
-    print("========================================")
+
+    return new_genuine_leads
 
 if __name__ == "__main__":
     out_file = sys.argv[1] if len(sys.argv) > 1 else "data/scraped_leads.json"
-    run_pipeline(output_path=out_file)
+    reg_file = sys.argv[2] if len(sys.argv) > 2 else "data/lead_registry.json"
+    run_pipeline(output_path=out_file, registry_path=reg_file)

@@ -57,4 +57,13 @@ class DispatchService {
     }
     return false;
   }
+
+  static Future<bool> launchMapsUrl(String? url) async {
+    if (url == null || url.trim().isEmpty) return false;
+    final uri = Uri.parse(url.trim());
+    if (await canLaunchUrl(uri)) {
+      return await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+    return false;
+  }
 }

@@ -12,6 +12,7 @@ class HiveService {
   Box<dynamic> get leadsBox => _storage.leadsBox;
   Box<dynamic> get settingsBox => _storage.settingsBox;
   Box<dynamic> get blacklistBox => _storage.blacklistBox;
+  Box<dynamic> get processedLeadsBox => _storage.processedLeadsBox;
 
   Future<void> init() async {
     await _storage.init();

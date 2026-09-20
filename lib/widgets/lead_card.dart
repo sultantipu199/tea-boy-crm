@@ -285,9 +285,13 @@ class LeadCard extends StatelessWidget {
                 Row(
                   children: [
                     InkWell(
-                      onTap: () => DispatchService.launchMaps(
-                        query: '${lead.hub} Saudi Arabia',
-                      ),
+                      onTap: () {
+                        final mapsUrl = lead.googleMapsUrl ??
+                            (lead.placeId != null && lead.placeId!.isNotEmpty
+                                ? 'https://maps.google.com/?q=place_id:${lead.placeId}'
+                                : 'https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent('${lead.companyName} ${lead.hub} Riyadh')}');
+                        DispatchService.launchMapsUrl(mapsUrl);
+                      },
                       borderRadius: BorderRadius.circular(4),
                       child: Row(
                         children: [
@@ -504,6 +508,24 @@ class LeadCard extends StatelessWidget {
                         builder: (_) =>
                             QuotationCalculatorDialog(lead: lead),
                       ),
+                    ),
+                    const SizedBox(width: 8),
+
+                    // Open in Google Maps Action (Verified Google Pin)
+                    IconButton(
+                      icon: const Icon(Icons.pin_drop_outlined,
+                          size: 18, color: AppTheme.mintEmerald),
+                      tooltip: 'Open in Google Maps',
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                      onPressed: () async {
+                        await HapticFeedback.lightImpact();
+                        final url = lead.googleMapsUrl ??
+                            (lead.placeId != null && lead.placeId!.isNotEmpty
+                                ? 'https://maps.google.com/?q=place_id:${lead.placeId}'
+                                : 'https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent('${lead.companyName} ${lead.hub} Riyadh')}');
+                        await DispatchService.launchMapsUrl(url);
+                      },
                     ),
                     const SizedBox(width: 8),
 

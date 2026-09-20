@@ -1,3 +1,5 @@
+import 'dart:convert';
+import 'package:crypto/crypto.dart';
 import 'ai_analysis.dart';
 import 'zones.dart';
 
@@ -34,7 +36,11 @@ class LeadActivity {
 }
 
 class Lead {
-  final String id; // Composite Primary Key: companyName_sanitizedPhone
+  final String id; // Composite Primary Key: companyName_sanitizedPhone or SHA-256 hash
+  final String? hashKey; // SHA-256(normalized_phone + "_" + place_id)
+  final String? placeId; // Authentic Google Place ID
+  final String? address; // Real street address
+  final String? googleMapsUrl; // https://maps.google.com/?q=place_id:PLACE_ID
   final String companyName;
   final String contactPerson;
   final String saudiMobile; // strictly 9665xxxxxxxx
@@ -56,6 +62,10 @@ class Lead {
 
   Lead({
     required this.id,
+    this.hashKey,
+    this.placeId,
+    this.address,
+    this.googleMapsUrl,
     required this.companyName,
     required this.contactPerson,
     required this.saudiMobile,
@@ -106,12 +116,24 @@ class Lead {
     return '${cleanCompany}_$cleanPhone';
   }
 
+  /// Bulletproof SHA-256 Deduplication Hash from normalized phone and Google Place ID
+  static String buildDeduplicationHash(String phone, String placeId) {
+    final clean = sanitizePhone(phone);
+    final normPhone = clean.startsWith('+') ? clean : '+$clean';
+    final rawKey = '${normPhone}_${placeId.trim()}';
+    return sha256.convert(utf8.encode(rawKey)).toString();
+  }
+
   factory Lead.create({
     required String companyName,
     required String contactPerson,
     required String saudiMobile,
     String? email,
     required String hub,
+    String? placeId,
+    String? address,
+    String? googleMapsUrl,
+    String? hashKey,
     double? lat,
     double? lng,
     required List<String> staffingRequirements,
@@ -126,7 +148,10 @@ class Lead {
     List<LeadActivity>? activities,
     AiAnalysis? aiAnalysis,
   }) {
-    final key = buildCompositeKey(companyName, saudiMobile);
+    final key = hashKey ??
+        (placeId != null && placeId.isNotEmpty
+            ? buildDeduplicationHash(saudiMobile, placeId)
+            : buildCompositeKey(companyName, saudiMobile));
     final today = dateAdded ??
         DateTime.now().toIso8601String().split('T').first; // YYYY-MM-DD
     final zone = RiyadhZones.findZone(hub);
@@ -135,9 +160,18 @@ class Lead {
     final resolvedEmail = (email != null && email.trim().isNotEmpty)
         ? email.trim()
         : defaultCorporateEmail(companyName);
+    final resolvedMapsUrl = (googleMapsUrl != null && googleMapsUrl.isNotEmpty)
+        ? googleMapsUrl
+        : (placeId != null && placeId.isNotEmpty
+            ? 'https://maps.google.com/?q=place_id:$placeId'
+            : null);
 
     return Lead(
       id: key,
+      hashKey: key,
+      placeId: placeId,
+      address: address,
+      googleMapsUrl: resolvedMapsUrl,
       companyName: companyName.trim(),
       contactPerson: contactPerson.trim(),
       saudiMobile: sanitizePhone(saudiMobile),
@@ -184,6 +218,14 @@ class Lead {
         ? existingEmail
         : defaultCorporateEmail(compName);
 
+    final placeIdVal = map['place_id']?.toString();
+    final hashKeyVal = map['hash_key']?.toString() ?? map['id']?.toString();
+    final gmapsUrl = map['google_maps_url']?.toString() ??
+        (placeIdVal != null && placeIdVal.isNotEmpty
+            ? 'https://maps.google.com/?q=place_id:$placeIdVal'
+            : null);
+    final addr = map['address']?.toString();
+
     double? parseCoord(dynamic val) {
       if (val is num) return val.toDouble();
       if (val != null) return double.tryParse(val.toString());
@@ -191,8 +233,14 @@ class Lead {
     }
 
     return Lead(
-      id: map['id']?.toString() ??
-          buildCompositeKey(compName, phone),
+      id: hashKeyVal ??
+          (placeIdVal != null && placeIdVal.isNotEmpty
+              ? buildDeduplicationHash(phone, placeIdVal)
+              : buildCompositeKey(compName, phone)),
+      hashKey: hashKeyVal,
+      placeId: placeIdVal,
+      address: addr,
+      googleMapsUrl: gmapsUrl,
       companyName: compName,
       contactPerson: map['contact_person']?.toString() ?? '',
       saudiMobile: sanitizePhone(phone),
@@ -227,6 +275,10 @@ class Lead {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
+      'hash_key': hashKey ?? id,
+      'place_id': placeId,
+      'address': address,
+      'google_maps_url': googleMapsUrl,
       'company_name': companyName,
       'contact_person': contactPerson,
       'saudi_mobile': saudiMobile,
@@ -256,6 +308,10 @@ class Lead {
     String? saudiMobile,
     String? email,
     String? hub,
+    String? placeId,
+    String? address,
+    String? googleMapsUrl,
+    String? hashKey,
     double? lat,
     double? lng,
     List<String>? staffingRequirements,
@@ -271,6 +327,10 @@ class Lead {
   }) {
     return Lead(
       id: id,
+      hashKey: hashKey ?? this.hashKey,
+      placeId: placeId ?? this.placeId,
+      address: address ?? this.address,
+      googleMapsUrl: googleMapsUrl ?? this.googleMapsUrl,
       companyName: companyName ?? this.companyName,
       contactPerson: contactPerson ?? this.contactPerson,
       saudiMobile: saudiMobile ?? this.saudiMobile,

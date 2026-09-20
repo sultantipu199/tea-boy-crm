@@ -1,7 +1,7 @@
 name: tea_boy_crm
 description: "Enterprise B2B Staffing CRM for Riyadh Corporate Offices supplying Cleaners, Pantry Staff, and Tea Boys"
 publish_to: 'none'
-version: 2.1.0+3
+version: 2.2.0+4
 
 environment:
   sdk: '>=3.3.0 <4.0.0'
@@ -19,6 +19,7 @@ dependencies:
   flutter_riverpod: ^2.5.1
   geolocator: ^12.0.0
   flutter_animate: ^4.5.0
+  crypto: ^3.0.7
 
 dev_dependencies:
   flutter_test:

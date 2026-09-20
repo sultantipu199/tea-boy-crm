@@ -188,41 +188,65 @@ void main() {
       expect(contacted.contactedAt, isNotNull);
     });
 
-    test('Manual Scraper Dynamic Fresh Listing Generation & Normalization', () {
-      final freshListings = ScraperService.instance.generateDynamicFreshListings(count: 20);
-      expect(freshListings.length, equals(20));
+    test('Strict Saudi Mobile Filter Discards Landlines, Unified, and Non-Mobiles', () {
+      // Valid mobile numbers -> strictly +9665xxxxxxxx
+      expect(ScraperService.normalizeSaudiMobile('0501234567'), equals('+966501234567'));
+      expect(ScraperService.normalizeSaudiMobile('+966501234567'), equals('+966501234567'));
+      expect(ScraperService.normalizeSaudiMobile('00966559876543'), equals('+966559876543'));
+      expect(ScraperService.normalizeSaudiMobile('+966 53 100 0216'), equals('+966531000216'));
 
-      for (final item in freshListings) {
-        expect(item['company_name'], isNotEmpty);
-        expect(item['contact_person'], isNotEmpty);
-        expect(item['phone'], startsWith('9665'));
-        expect((item['phone'] as String).length, equals(12));
-        expect(item['hub'], isNotEmpty);
-        expect(item['intent_score'], greaterThanOrEqualTo(65));
-        expect(item['intent_score'], lessThanOrEqualTo(98));
-        expect((item['staffing'] as List), isNotEmpty);
-      }
+      // Discarded Landlines (011), Unified lines (9200, 800), and invalid
+      expect(ScraperService.normalizeSaudiMobile('0114644844'), isNull);
+      expect(ScraperService.normalizeSaudiMobile('0112738000'), isNull);
+      expect(ScraperService.normalizeSaudiMobile('920012372'), isNull);
+      expect(ScraperService.normalizeSaudiMobile('920024460'), isNull);
+      expect(ScraperService.normalizeSaudiMobile('8001234567'), isNull);
+      expect(ScraperService.normalizeSaudiMobile(''), isNull);
+      expect(ScraperService.normalizeSaudiMobile(null), isNull);
     });
 
-    test('Manual Scraper Category & Hub Scope Filtering', () {
-      final hotspotListings = ScraperService.instance.generateDynamicFreshListings(
-        count: 10,
-        clusterCategory: RiyadhClusterCategory.hotspots,
-      );
-      expect(hotspotListings.length, equals(10));
-      for (final item in hotspotListings) {
-        final hub = item['hub'] as String;
-        expect(RiyadhZones.matchesCategory(hub, RiyadhClusterCategory.hotspots), isTrue);
-      }
+    test('Bulletproof SHA-256 Composite Deduplication Key', () {
+      final hash1 = Lead.buildDeduplicationHash('+966581297003', 'ChIJJzoGECgDLz4Raw9i1BPA9T8');
+      final hash2 = Lead.buildDeduplicationHash('0581297003', 'ChIJJzoGECgDLz4Raw9i1BPA9T8');
+      
+      // Must be a valid 64-char lowercase hex string
+      expect(hash1.length, equals(64));
+      expect(RegExp(r'^[a-f0-9]{64}$').hasMatch(hash1), isTrue);
 
-      final kafdListings = ScraperService.instance.generateDynamicFreshListings(
-        count: 5,
-        targetHub: 'KAFD Phase 1 & 2',
+      // Must normalize phone identically
+      expect(hash1, equals(hash2));
+
+      // Different Place ID must yield different hash
+      final hash3 = Lead.buildDeduplicationHash('+966581297003', 'ChIJK2fMfiwDLz4RFWnQIXYtzlw');
+      expect(hash1, isNot(equals(hash3)));
+    });
+
+    test('Authentic Google Maps Place Metadata and Direct Playable Links', () {
+      final lead = Lead.create(
+        companyName: 'Business tower',
+        contactPerson: 'Office / Procurement Director',
+        saudiMobile: '0581297003',
+        hub: 'Al Olaya',
+        placeId: 'ChIJJzoGECgDLz4Raw9i1BPA9T8',
+        address: 'Business tower, 7135, 2478, Al Olaya, Riyadh 12244',
+        staffingRequirements: ['Tea Boy', 'Cleaners'],
       );
-      expect(kafdListings.length, equals(5));
-      for (final item in kafdListings) {
-        expect(item['hub'], equals('KAFD Phase 1 & 2'));
-      }
+
+      expect(lead.placeId, equals('ChIJJzoGECgDLz4Raw9i1BPA9T8'));
+      expect(lead.googleMapsUrl, equals('https://maps.google.com/?q=place_id:ChIJJzoGECgDLz4Raw9i1BPA9T8'));
+      expect(lead.address, contains('Al Olaya'));
+      expect(lead.id.length, equals(64)); // SHA-256 hash as primary id
+
+      // Serialization round-trip
+      final json = lead.toJson();
+      expect(json['place_id'], equals('ChIJJzoGECgDLz4Raw9i1BPA9T8'));
+      expect(json['google_maps_url'], equals('https://maps.google.com/?q=place_id:ChIJJzoGECgDLz4Raw9i1BPA9T8'));
+      expect(json['hash_key'], equals(lead.id));
+
+      final restored = Lead.fromJson(json);
+      expect(restored.placeId, equals(lead.placeId));
+      expect(restored.googleMapsUrl, equals(lead.googleMapsUrl));
+      expect(restored.id, equals(lead.id));
     });
   });
 }
