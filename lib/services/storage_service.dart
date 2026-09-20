@@ -20,6 +20,165 @@ class StorageService {
   // Real-time revision notifier for reactive UI rebuilding
   final ValueNotifier<int> revision = ValueNotifier<int>(0);
 
+  // In-Memory Fast Lookup Index for Absolute Deduplication
+  final Set<String> _knownPhones = <String>{};
+  final Set<String> _knownPlaceIds = <String>{};
+  final Set<String> _knownCompanyNames = <String>{};
+  final Set<String> _knownHashes = <String>{};
+
+  void _indexLead(Lead lead, [String? hashKey]) {
+    final cleanPhone = sanitizePhone(lead.saudiMobile);
+    if (cleanPhone.isNotEmpty) _knownPhones.add(cleanPhone);
+
+    final placeId = lead.placeId?.trim();
+    if (placeId != null && placeId.isNotEmpty) _knownPlaceIds.add(placeId);
+
+    final normName = Lead.normalizeCompanyName(lead.companyName);
+    if (normName.isNotEmpty) _knownCompanyNames.add(normName);
+
+    if (hashKey != null && hashKey.isNotEmpty) _knownHashes.add(hashKey);
+    if (lead.hashKey != null && lead.hashKey!.isNotEmpty) {
+      _knownHashes.add(lead.hashKey!);
+    }
+    if (lead.id.isNotEmpty) _knownHashes.add(lead.id);
+
+    final compKey = Lead.buildCompositeKey(lead.companyName, cleanPhone);
+    _knownHashes.add(compKey);
+  }
+
+  void _rebuildDedupIndex() {
+    _knownPhones.clear();
+    _knownPlaceIds.clear();
+    _knownCompanyNames.clear();
+    _knownHashes.clear();
+
+    if (_leadsBox != null && _leadsBox!.isOpen) {
+      for (final key in _leadsBox!.keys) {
+        _knownHashes.add(key.toString());
+        final val = _leadsBox!.get(key);
+        if (val is Map) {
+          try {
+            final lead = Lead.fromJson(val);
+            _indexLead(lead, key.toString());
+          } catch (_) {}
+        }
+      }
+    }
+
+    if (_processedLeadsBox != null && _processedLeadsBox!.isOpen) {
+      for (final key in _processedLeadsBox!.keys) {
+        _knownHashes.add(key.toString());
+        final val = _processedLeadsBox!.get(key);
+        if (val is Map) {
+          final p = val['phone']?.toString();
+          if (p != null) {
+            final cp = sanitizePhone(p);
+            if (cp.isNotEmpty) _knownPhones.add(cp);
+          }
+          final pid = val['place_id']?.toString()?.trim();
+          if (pid != null && pid.isNotEmpty) _knownPlaceIds.add(pid);
+          final cname = val['company_name']?.toString();
+          if (cname != null) {
+            final n = Lead.normalizeCompanyName(cname);
+            if (n.isNotEmpty) _knownCompanyNames.add(n);
+          }
+        }
+      }
+    }
+  }
+
+  /// Scans entire leads database, eliminates any duplicate leads across phone, placeId, or company name.
+  /// Keeps the most complete/progressed lead, purges all redundant entries, and returns count of removed duplicates.
+  Future<int> deduplicateDatabase() async {
+    if (_leadsBox == null || !_leadsBox!.isOpen) return 0;
+
+    final allKeys = _leadsBox!.keys.toList();
+    if (allKeys.isEmpty) return 0;
+
+    final seenPhones = <String, String>{}; // cleanPhone -> canonicalKey
+    final seenPlaceIds = <String, String>{}; // placeId -> canonicalKey
+    final seenNames = <String, String>{}; // normName -> canonicalKey
+    final keysToDelete = <dynamic>{};
+
+    for (final key in allKeys) {
+      final val = _leadsBox!.get(key);
+      if (val is! Map) {
+        keysToDelete.add(key);
+        continue;
+      }
+
+      Lead lead;
+      try {
+        lead = Lead.fromJson(val);
+      } catch (_) {
+        keysToDelete.add(key);
+        continue;
+      }
+
+      final cleanPhone = sanitizePhone(lead.saudiMobile);
+      final placeId = lead.placeId?.trim() ?? '';
+      final normName = Lead.normalizeCompanyName(lead.companyName);
+
+      String? existingKey;
+
+      if (cleanPhone.isNotEmpty && seenPhones.containsKey(cleanPhone)) {
+        existingKey = seenPhones[cleanPhone];
+      } else if (placeId.isNotEmpty && seenPlaceIds.containsKey(placeId)) {
+        existingKey = seenPlaceIds[placeId];
+      } else if (normName.isNotEmpty && seenNames.containsKey(normName)) {
+        existingKey = seenNames[normName];
+      }
+
+      if (existingKey != null) {
+        // This is a duplicate! Determine which copy is superior
+        final existingVal = _leadsBox!.get(existingKey);
+        if (existingVal is Map) {
+          try {
+            final existingLead = Lead.fromJson(existingVal);
+            final currentScore = _leadCompletenessScore(lead);
+            final existingScore = _leadCompletenessScore(existingLead);
+
+            if (currentScore > existingScore) {
+              // Current lead is more complete, delete the previous key
+              keysToDelete.add(existingKey);
+              if (cleanPhone.isNotEmpty) seenPhones[cleanPhone] = key.toString();
+              if (placeId.isNotEmpty) seenPlaceIds[placeId] = key.toString();
+              if (normName.isNotEmpty) seenNames[normName] = key.toString();
+              continue;
+            }
+          } catch (_) {}
+        }
+        keysToDelete.add(key);
+      } else {
+        if (cleanPhone.isNotEmpty) seenPhones[cleanPhone] = key.toString();
+        if (placeId.isNotEmpty) seenPlaceIds[placeId] = key.toString();
+        if (normName.isNotEmpty) seenNames[normName] = key.toString();
+      }
+    }
+
+    for (final k in keysToDelete) {
+      await _leadsBox!.delete(k);
+    }
+
+    _rebuildDedupIndex();
+
+    if (keysToDelete.isNotEmpty) {
+      _notifyChange();
+    }
+    return keysToDelete.length;
+  }
+
+  int _leadCompletenessScore(Lead lead) {
+    int score = 0;
+    if (lead.isContacted || lead.isInterested || lead.isAnalyzed) score += 50;
+    if (lead.notes.isNotEmpty) score += 20;
+    if (lead.aiAnalysis != null) score += 30;
+    if (lead.activities.isNotEmpty) score += lead.activities.length * 10;
+    if (lead.placeId != null && lead.placeId!.isNotEmpty) score += 15;
+    if (lead.googleMapsUrl != null && lead.googleMapsUrl!.isNotEmpty) score += 10;
+    return score;
+  }
+
   Future<void> init() async {
     await Hive.initFlutter();
     _leadsBox = await Hive.openBox<dynamic>(leadsBoxName);
@@ -27,9 +186,16 @@ class StorageService {
     _settingsBox = await Hive.openBox<dynamic>(settingsBoxName);
     _processedLeadsBox = await Hive.openBox<dynamic>(processedLeadsBoxName);
 
-    // Seed authentic Google Maps Riyadh corporate hotspot leads if database is empty
+    // 1. Automatically sanitize & purge any duplicates stored from legacy runs
+    await deduplicateDatabase();
+
+    // 2. Build live in-memory deduplication index
+    _rebuildDedupIndex();
+
+    // 3. Seed authentic Google Maps Riyadh corporate hotspot leads if database is empty
     if (_leadsBox!.isEmpty) {
       await seedInitialCorporateLeads();
+      _rebuildDedupIndex();
     }
   }
 
@@ -68,24 +234,70 @@ class StorageService {
   /// Strict phone normalization
   String sanitizePhone(String phone) => Lead.sanitizePhone(phone);
 
-  /// Deduplication check: check if composite key or SHA-256 hash already exists
+  /// Deduplication check: check if phone, placeId, normalized company name, or hash already exists
   bool leadExists(String companyName, String rawPhone, [String? placeId]) {
-    if (placeId != null && placeId.isNotEmpty) {
-      final hash = Lead.buildDeduplicationHash(rawPhone, placeId);
-      if (processedLeadsBox.containsKey(hash) || leadsBox.containsKey(hash)) {
+    final cleanPhone = sanitizePhone(rawPhone);
+    if (cleanPhone.isNotEmpty && _knownPhones.contains(cleanPhone)) {
+      return true;
+    }
+
+    if (placeId != null && placeId.trim().isNotEmpty) {
+      final pid = placeId.trim();
+      if (_knownPlaceIds.contains(pid)) {
+        return true;
+      }
+      final hash = Lead.buildDeduplicationHash(cleanPhone, pid);
+      if (_knownHashes.contains(hash) ||
+          processedLeadsBox.containsKey(hash) ||
+          leadsBox.containsKey(hash)) {
         return true;
       }
     }
-    final key = Lead.buildCompositeKey(companyName, rawPhone);
-    if (leadsBox.containsKey(key) || processedLeadsBox.containsKey(key)) {
+
+    final normName = Lead.normalizeCompanyName(companyName);
+    if (normName.isNotEmpty && _knownCompanyNames.contains(normName)) {
       return true;
     }
+
+    final compKey = Lead.buildCompositeKey(companyName, cleanPhone);
+    if (_knownHashes.contains(compKey) ||
+        leadsBox.containsKey(compKey) ||
+        processedLeadsBox.containsKey(compKey)) {
+      return true;
+    }
+
+    // Direct fallback scan across leadsBox values
+    if (_leadsBox != null && _leadsBox!.isOpen) {
+      for (final val in _leadsBox!.values) {
+        if (val is Map) {
+          final existingPhone = sanitizePhone(
+              val['saudi_mobile']?.toString() ?? val['phone']?.toString() ?? '');
+          if (cleanPhone.isNotEmpty && existingPhone == cleanPhone) {
+            return true;
+          }
+          final existingPlaceId = val['place_id']?.toString()?.trim();
+          if (placeId != null &&
+              placeId.trim().isNotEmpty &&
+              existingPlaceId == placeId.trim()) {
+            return true;
+          }
+          final existingName =
+              Lead.normalizeCompanyName(val['company_name']?.toString() ?? '');
+          if (normName.isNotEmpty && existingName == normName) {
+            return true;
+          }
+        }
+      }
+    }
+
     return false;
   }
 
   /// Check if hash_key exists in processed_leads
   bool isLeadProcessed(String hashKey) {
-    return processedLeadsBox.containsKey(hashKey) || leadsBox.containsKey(hashKey);
+    return _knownHashes.contains(hashKey) ||
+        processedLeadsBox.containsKey(hashKey) ||
+        leadsBox.containsKey(hashKey);
   }
 
   /// Check if a phone number is permanently blacklisted
@@ -94,7 +306,7 @@ class StorageService {
     return blacklistBox.containsKey(clean);
   }
 
-  /// Add lead with strict deduplication barrier and blacklist cross-reference
+  /// Add lead with strict triple-lock deduplication barrier and blacklist cross-reference
   Future<bool> addLead(Lead lead) async {
     final cleanPhone = sanitizePhone(lead.saudiMobile);
     if (isBlacklisted(cleanPhone)) {
@@ -102,13 +314,19 @@ class StorageService {
       return false;
     }
 
+    // Pre-Ingestion Check 1: Comprehensive Multi-Field Deduplication
+    if (leadExists(lead.companyName, cleanPhone, lead.placeId)) {
+      return false;
+    }
+
     final hashKey = lead.hashKey ??
         (lead.placeId != null && lead.placeId!.isNotEmpty
             ? Lead.buildDeduplicationHash(cleanPhone, lead.placeId!)
-            : lead.id);
+            : Lead.buildCompositeKey(lead.companyName, cleanPhone));
 
-    // Pre-Ingestion Check: If hash exists in processed_leads or in leadsBox, DROP IMMEDIATELY
-    if (processedLeadsBox.containsKey(hashKey) ||
+    // Pre-Ingestion Check 2: Hash & Key Verification
+    if (_knownHashes.contains(hashKey) ||
+        processedLeadsBox.containsKey(hashKey) ||
         leadsBox.containsKey(hashKey) ||
         leadsBox.containsKey(lead.id)) {
       return false;
@@ -130,6 +348,9 @@ class StorageService {
       'date_added': today,
     });
 
+    // Update in-memory index immediately
+    _indexLead(lead, hashKey);
+
     _notifyChange();
     return true;
   }
@@ -137,26 +358,55 @@ class StorageService {
   /// Update existing lead status, notes, or AI analysis
   Future<void> updateLead(Lead lead) async {
     await leadsBox.put(lead.id, lead.toJson());
+    _rebuildDedupIndex();
     _notifyChange();
   }
 
   /// Delete lead by composite key
   Future<void> deleteLead(String id) async {
     await leadsBox.delete(id);
+    _rebuildDedupIndex();
     _notifyChange();
   }
 
-  /// Retrieve all leads mapped to Lead model instances
+  /// Retrieve all leads mapped to Lead model instances with defensive in-memory deduplication
   List<Lead> getAllLeads() {
     final rawValues = leadsBox.values;
     final List<Lead> leads = [];
+    final seenPhones = <String>{};
+    final seenPlaceIds = <String>{};
+    final seenNames = <String>{};
+
     for (final val in rawValues) {
       if (val is Map) {
         final lead = Lead.fromJson(val);
+        final cleanPhone = sanitizePhone(lead.saudiMobile);
+
         // Exclude if blacklisted
-        if (!isBlacklisted(lead.saudiMobile)) {
-          leads.add(lead);
+        if (isBlacklisted(cleanPhone)) {
+          continue;
         }
+
+        // Defensive In-Memory Deduplication: Prevent duplicate display on any screen
+        if (cleanPhone.isNotEmpty && seenPhones.contains(cleanPhone)) {
+          continue;
+        }
+
+        final placeId = lead.placeId?.trim();
+        if (placeId != null && placeId.isNotEmpty && seenPlaceIds.contains(placeId)) {
+          continue;
+        }
+
+        final normName = Lead.normalizeCompanyName(lead.companyName);
+        if (normName.isNotEmpty && seenNames.contains(normName)) {
+          continue;
+        }
+
+        if (cleanPhone.isNotEmpty) seenPhones.add(cleanPhone);
+        if (placeId != null && placeId.isNotEmpty) seenPlaceIds.add(placeId);
+        if (normName.isNotEmpty) seenNames.add(normName);
+
+        leads.add(lead);
       }
     }
     return leads;

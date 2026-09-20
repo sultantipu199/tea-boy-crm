@@ -72,6 +72,16 @@ def normalize_saudi_mobile(raw_phone: str) -> str | None:
         return f"+966{m.group(1)}"
     return None
 
+def normalize_company_name(name: str) -> str:
+    """Normalize Arabic and English company names for deduplication."""
+    if not name:
+        return ""
+    clean = name.strip().lower()
+    clean = re.sub(r"^(?:شركة|مؤسسة|مكتب|فرع)\s+", "", clean)
+    clean = re.sub(r"\b(?:co|company|ltd|llc|inc|est|corporation|corp|branch|group)\b", "", clean, flags=re.IGNORECASE)
+    clean = re.sub(r"[^\w\s\u0600-\u06FF]", " ", clean)
+    return re.sub(r"\s+", " ", clean).strip()
+
 def generate_dedup_hash(normalized_phone: str, place_id: str) -> str:
     """
     Deduplication Key: Generate a unique composite SHA-256 hash from:
@@ -287,6 +297,10 @@ def run_pipeline(
 
     # Load existing scraped leads if present
     existing_leads_by_id = {}
+    existing_phones = set()
+    existing_place_ids = set()
+    existing_names = set()
+
     if os.path.exists(output_path):
         try:
             with open(output_path, "r", encoding="utf-8") as f:
@@ -296,8 +310,30 @@ def run_pipeline(
                         lid = item.get("id") or item.get("hash_key")
                         if lid:
                             existing_leads_by_id[lid] = item
+                        p = normalize_saudi_mobile(item.get("phone") or item.get("saudi_mobile"))
+                        if p:
+                            existing_phones.add(p)
+                            existing_phones.add(re.sub(r"\D", "", p))
+                        pid = item.get("place_id")
+                        if pid:
+                            existing_place_ids.add(pid)
+                        cname = normalize_company_name(item.get("company_name") or "")
+                        if cname:
+                            existing_names.add(cname)
         except Exception as e:
             print(f"Warning: Failed to parse existing leads file: {e}")
+
+    for item in registry.values():
+        p = normalize_saudi_mobile(item.get("phone"))
+        if p:
+            existing_phones.add(p)
+            existing_phones.add(re.sub(r"\D", "", p))
+        pid = item.get("place_id")
+        if pid:
+            existing_place_ids.add(pid)
+        cname = normalize_company_name(item.get("company_name") or "")
+        if cname:
+            existing_names.add(cname)
 
     session = requests.Session()
 
@@ -333,23 +369,33 @@ def run_pipeline(
                 discarded_non_mobile += 1
                 continue
 
+            clean_digits = re.sub(r"\D", "", normalized_phone)
+            norm_name = normalize_company_name(company_name)
+
             # 2. Deduplication Key: composite SHA-256 hash
             hash_key = generate_dedup_hash(normalized_phone, place_id)
 
-            # 3. Pre-Ingestion Check: Registry Check & Blacklist Check
-            if hash_key in registry:
+            # 3. Pre-Ingestion Check: Multi-Field Deduplication & Blacklist Check
+            if (
+                normalized_phone in existing_phones
+                or clean_digits in existing_phones
+                or place_id in existing_place_ids
+                or (norm_name and norm_name in existing_names)
+                or hash_key in registry
+                or hash_key in existing_leads_by_id
+            ):
                 discarded_duplicates += 1
                 continue
 
-            clean_digits = re.sub(r"\D", "", normalized_phone)
             if normalized_phone in blacklisted or clean_digits in blacklisted:
                 discarded_blacklisted += 1
                 continue
 
-            # Check existing file records as well
-            if hash_key in existing_leads_by_id:
-                discarded_duplicates += 1
-                continue
+            existing_phones.add(normalized_phone)
+            existing_phones.add(clean_digits)
+            existing_place_ids.add(place_id)
+            if norm_name:
+                existing_names.add(norm_name)
 
             # 4. Construct Authentic Lead Object
             # Staffing requirements tailored for Riyadh corporate offices

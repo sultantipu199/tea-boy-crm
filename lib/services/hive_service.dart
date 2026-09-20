@@ -69,4 +69,6 @@ class HiveService {
 
   Future<void> seedInitialCorporateLeads() =>
       _storage.seedInitialCorporateLeads();
+
+  Future<int> deduplicateDatabase() => _storage.deduplicateDatabase();
 }

@@ -379,6 +379,39 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           ),
                         ],
                       ),
+                      const SizedBox(height: 10),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppTheme.mintEmerald,
+                            foregroundColor: AppTheme.obsidianVoid,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          onPressed: () async {
+                            final pruned = await StorageService.instance.deduplicateDatabase();
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    pruned > 0
+                                        ? '🧹 Deduplication complete! Purged $pruned duplicate records.'
+                                        : '✅ Zero duplicates found! Pipeline is 100% clean.',
+                                  ),
+                                  backgroundColor: AppTheme.saudiEmerald,
+                                  behavior: SnackBarBehavior.floating,
+                                ),
+                              );
+                              setState(() {});
+                            }
+                          },
+                          icon: const Icon(Icons.cleaning_services, size: 18),
+                          label: const Text(
+                            '🧹 Clean & Deduplicate Database',
+                            style: TextStyle(fontWeight: FontWeight.w700),
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                 ),

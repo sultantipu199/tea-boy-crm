@@ -248,5 +248,23 @@ void main() {
       expect(restored.googleMapsUrl, equals(lead.googleMapsUrl));
       expect(restored.id, equals(lead.id));
     });
+
+    test('Company Name Fuzzy Normalization for Deduplication', () {
+      expect(Lead.normalizeCompanyName('شركة برج الأعمال المحدودة'), equals('برج الأعمال'));
+      expect(Lead.normalizeCompanyName('مؤسسة الحلول الذكية'), equals('الحلول الذكية'));
+      expect(Lead.normalizeCompanyName('Olaya Towers Company Ltd.'), equals('olaya towers'));
+      expect(Lead.normalizeCompanyName('Business Link KSA LLC'), equals('business link ksa'));
+      expect(Lead.normalizeCompanyName('RAM Systems Group'), equals('ram systems'));
+      expect(Lead.normalizeCompanyName('  Business Tower  '), equals('business tower'));
+    });
+
+    test('Composite Key Matches Across Formatting and Suffix Variations', () {
+      final key1 = Lead.buildCompositeKey('Business Tower Co. Ltd', '+966581297003');
+      final key2 = Lead.buildCompositeKey('business tower', '0581297003');
+      final key3 = Lead.buildCompositeKey('  BUSINESS TOWER  ', '966581297003');
+
+      expect(key1, equals(key2));
+      expect(key2, equals(key3));
+    });
   });
 }

@@ -109,11 +109,31 @@ class Lead {
     return 'procurement@$handle.sa';
   }
 
+  /// Advanced company name normalization for fuzzy deduplication
+  static String normalizeCompanyName(String name) {
+    if (name.isEmpty) return '';
+    String clean = name.trim().toLowerCase();
+    // Remove Arabic prefixes like شركة, مؤسسة, مكتب, فرع
+    clean = clean.replaceAll(RegExp(r'^(?:شركة|مؤسسة|مكتب|فرع)\s+'), '');
+    // Remove Arabic corporate suffixes like المحدودة, القابضة, ش م م, مساهمة
+    clean = clean.replaceAll(RegExp(r'\s+(?:المحدودة|القابضة|ش\.?م\.?م|مساهمة)$'), '');
+    // Remove English corporate suffixes
+    clean = clean.replaceAll(
+        RegExp(r'\b(?:co|company|ltd|llc|inc|est|corporation|corp|branch|group)\b',
+            caseSensitive: false),
+        '');
+    // Remove special punctuation, dashes, parentheses
+    clean = clean.replaceAll(RegExp(r'[^\p{L}\p{N}\s]', unicode: true), ' ');
+    // Collapse multi-spaces
+    clean = clean.replaceAll(RegExp(r'\s+'), ' ').trim();
+    return clean;
+  }
+
   /// Construct composite primary key for deduplication
   static String buildCompositeKey(String companyName, String rawPhone) {
-    final cleanCompany = companyName.trim().toLowerCase();
+    final cleanCompany = normalizeCompanyName(companyName);
     final cleanPhone = sanitizePhone(rawPhone);
-    return '${cleanCompany}_$cleanPhone';
+    return '${cleanCompany.isNotEmpty ? cleanCompany : companyName.trim().toLowerCase()}_$cleanPhone';
   }
 
   /// Bulletproof SHA-256 Deduplication Hash from normalized phone and Google Place ID

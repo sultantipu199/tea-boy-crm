@@ -198,6 +198,11 @@ class ScraperService {
     int skippedBlacklisted = 0;
     List<String> addedCompanies = [];
 
+    // In-Run deduplication tracking sets to prevent duplicate ingestion across queries
+    final seenInRunPhones = <String>{};
+    final seenInRunPlaceIds = <String>{};
+    final seenInRunCompanyNames = <String>{};
+
     for (final entry in queriesToRun) {
       final hubName = entry.key;
       final queryText = entry.value;
@@ -221,25 +226,37 @@ class ScraperService {
           continue;
         }
 
-        // 2. Blacklist Check
-        if (StorageService.instance.isBlacklisted(normalizedPhone)) {
-          skippedBlacklisted++;
-          continue;
-        }
+        final cleanDigits = Lead.sanitizePhone(normalizedPhone);
+        final normName = Lead.normalizeCompanyName(companyName);
 
-        // 3. Persistent SHA-256 Deduplication Check
-        final hashKey = Lead.buildDeduplicationHash(normalizedPhone, placeId);
-        if (StorageService.instance.isLeadProcessed(hashKey) ||
-            StorageService.instance.leadExists(companyName, normalizedPhone, placeId)) {
+        // 2. In-Run Deduplication Check
+        if (seenInRunPhones.contains(cleanDigits) ||
+            seenInRunPlaceIds.contains(placeId) ||
+            (normName.isNotEmpty && seenInRunCompanyNames.contains(normName))) {
           skippedDuplicates++;
           continue;
         }
 
-        // 4. Create authentic Lead
+        // 3. Blacklist Check
+        if (StorageService.instance.isBlacklisted(cleanDigits) ||
+            StorageService.instance.isBlacklisted(normalizedPhone)) {
+          skippedBlacklisted++;
+          continue;
+        }
+
+        // 4. Database Triple-Lock Deduplication Check
+        final hashKey = Lead.buildDeduplicationHash(cleanDigits, placeId);
+        if (StorageService.instance.isLeadProcessed(hashKey) ||
+            StorageService.instance.leadExists(companyName, cleanDigits, placeId)) {
+          skippedDuplicates++;
+          continue;
+        }
+
+        // 5. Create authentic Lead
         final newLead = Lead.create(
           companyName: companyName,
           contactPerson: 'Office / Procurement Director',
-          saudiMobile: normalizedPhone,
+          saudiMobile: cleanDigits,
           hub: hubName,
           placeId: placeId,
           address: address,
@@ -258,6 +275,9 @@ class ScraperService {
         if (added) {
           newLeadsAdded++;
           addedCompanies.add(companyName);
+          seenInRunPhones.add(cleanDigits);
+          seenInRunPlaceIds.add(placeId);
+          if (normName.isNotEmpty) seenInRunCompanyNames.add(normName);
         } else {
           skippedDuplicates++;
         }
