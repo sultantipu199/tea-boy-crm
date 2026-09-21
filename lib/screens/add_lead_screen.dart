@@ -356,22 +356,22 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFEF2F2),
+                      color: AppTheme.withAlphaFactor(AppTheme.crimsonAccent, 0.15),
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: const Color(0xFFFCA5A5)),
+                      border: Border.all(color: AppTheme.withAlphaFactor(AppTheme.crimsonAccent, 0.4)),
                     ),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Icon(Icons.error_outline,
-                            color: AppTheme.statusDisqualified, size: 20),
+                            color: AppTheme.crimsonAccent, size: 20),
                         const SizedBox(width: 10),
                         Expanded(
                           child: Text(
                             _duplicateErrorMessage!,
                             style: const TextStyle(
                               fontSize: 12.5,
-                              color: AppTheme.statusDisqualified,
+                              color: AppTheme.crispAlabaster,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
@@ -387,9 +387,9 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                   margin: const EdgeInsets.only(bottom: 16),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF0FDF4),
+                    color: AppTheme.frostedCharcoalSlate,
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: const Color(0xFFBBF7D0)),
+                    border: Border.all(color: AppTheme.cyberBorder),
                   ),
                   child: Row(
                     children: [
@@ -404,11 +404,11 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
                               style: TextStyle(
                                   fontSize: 12.5,
                                   fontWeight: FontWeight.w700,
-                                  color: AppTheme.slateNavy),
+                                  color: AppTheme.crispAlabaster),
                             ),
                             Text(
                               'Paste WhatsApp / SMS notes to auto-fill fields',
-                              style: TextStyle(fontSize: 11, color: AppTheme.textMuted),
+                              style: TextStyle(fontSize: 11, color: AppTheme.mutedSilver),
                             ),
                           ],
                         ),
@@ -418,7 +418,7 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
                         icon: const Icon(Icons.bolt, size: 14),
                         label: const Text('Auto-Fill'),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: AppTheme.saudiEmerald,
+                          backgroundColor: AppTheme.mintEmerald,
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(
                               horizontal: 10, vertical: 6),
@@ -435,7 +435,7 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
                 // Company Name
                 const Text(
                   'Company Name *',
-                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppTheme.slateNavy),
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppTheme.crispAlabaster),
                 ),
                 const SizedBox(height: 6),
                 TextFormField(
@@ -457,12 +457,12 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
                 // Saudi Mobile Number
                 const Text(
                   'Saudi Mobile Number *',
-                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppTheme.slateNavy),
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppTheme.crispAlabaster),
                 ),
                 const SizedBox(height: 4),
                 const Text(
                   'Standard Saudi format: 05xxxxxxxx or +9665xxxxxxxx (auto-sanitized)',
-                  style: TextStyle(fontSize: 11.5, color: AppTheme.textMuted),
+                  style: TextStyle(fontSize: 11.5, color: AppTheme.mutedSilver),
                 ),
                 const SizedBox(height: 6),
                 TextFormField(
@@ -489,7 +489,7 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
                 // Contact Person
                 const Text(
                   'Contact Person / Title',
-                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppTheme.slateNavy),
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppTheme.crispAlabaster),
                 ),
                 const SizedBox(height: 6),
                 TextFormField(
@@ -505,7 +505,7 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
                 // Riyadh Business Hub
                 const Text(
                   'Riyadh Business Hub *',
-                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppTheme.slateNavy),
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppTheme.crispAlabaster),
                 ),
                 const SizedBox(height: 6),
                 DropdownButtonFormField<String>(
@@ -527,7 +527,7 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
                 // Staffing Requirements (Multi-select)
                 const Text(
                   'Required Enterprise Staffing *',
-                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppTheme.slateNavy),
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppTheme.crispAlabaster),
                 ),
                 const SizedBox(height: 8),
                 Wrap(
@@ -576,7 +576,7 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
                 // Date Added (Timestamp Constraint)
                 const Text(
                   'Lead Discovery Date (YYYY-MM-DD)',
-                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppTheme.slateNavy),
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppTheme.crispAlabaster),
                 ),
                 const SizedBox(height: 6),
                 InkWell(
@@ -585,24 +585,28 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: AppTheme.frostedCharcoalSlate,
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: AppTheme.borderGrey),
+                      border: Border.all(color: AppTheme.cyberBorder),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Row(
                           children: [
-                            const Icon(Icons.calendar_month, size: 18, color: AppTheme.saudiEmerald),
+                            const Icon(Icons.calendar_month, size: 18, color: AppTheme.electricCyan),
                             const SizedBox(width: 10),
                             Text(
                               _dateAdded,
-                              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: AppTheme.crispAlabaster,
+                              ),
                             ),
                           ],
                         ),
-                        const Icon(Icons.arrow_drop_down, color: AppTheme.textMuted),
+                        const Icon(Icons.arrow_drop_down, color: AppTheme.mutedSilver),
                       ],
                     ),
                   ),
@@ -613,7 +617,7 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
                 // Initial Notes
                 const Text(
                   'Initial Context / Notes',
-                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppTheme.slateNavy),
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppTheme.crispAlabaster),
                 ),
                 const SizedBox(height: 6),
                 TextFormField(
@@ -632,12 +636,12 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
                   children: [
                     const Text(
                       'Follow-Up Callback Reminder',
-                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppTheme.slateNavy),
+                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppTheme.crispAlabaster),
                     ),
                     if (_followUpDate != null)
                       InkWell(
                         onTap: () => setState(() => _followUpDate = null),
-                        child: const Text('Clear', style: TextStyle(fontSize: 12, color: Colors.red)),
+                        child: const Text('Clear', style: TextStyle(fontSize: 12, color: AppTheme.crimsonAccent)),
                       ),
                   ],
                 ),
@@ -648,10 +652,10 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: AppTheme.frostedCharcoalSlate,
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(
-                        color: _followUpDate != null ? AppTheme.saudiEmerald : AppTheme.borderGrey,
+                        color: _followUpDate != null ? AppTheme.mintEmerald : AppTheme.cyberBorder,
                         width: _followUpDate != null ? 1.5 : 1.0,
                       ),
                     ),
@@ -661,7 +665,7 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
                         Row(
                           children: [
                             Icon(Icons.alarm, size: 18,
-                              color: _followUpDate != null ? AppTheme.saudiEmerald : AppTheme.textMuted),
+                              color: _followUpDate != null ? AppTheme.mintEmerald : AppTheme.mutedSilver),
                             const SizedBox(width: 10),
                             Text(
                               _followUpDate ?? 'Optional: Schedule callback date',
@@ -673,7 +677,7 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
                             ),
                           ],
                         ),
-                        const Icon(Icons.arrow_drop_down, color: AppTheme.textMuted),
+                        const Icon(Icons.arrow_drop_down, color: AppTheme.mutedSilver),
                       ],
                     ),
                   ),

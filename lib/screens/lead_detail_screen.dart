@@ -376,23 +376,26 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFFFEF2F2),
+        color: AppTheme.withAlphaFactor(AppTheme.crimsonAccent, 0.12),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFFCA5A5), width: 1.5),
+        border: Border.all(
+          color: AppTheme.withAlphaFactor(AppTheme.crimsonAccent, 0.4),
+          width: 1.2,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: const [
-              Icon(Icons.gpp_bad_rounded, color: Color(0xFFDC2626), size: 22),
+              Icon(Icons.gpp_bad_rounded, color: AppTheme.crimsonAccent, size: 22),
               SizedBox(width: 8),
               Text(
                 'Wrong-Number Guard Flagged',
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w800,
-                  color: Color(0xFFB91C1C),
+                  color: AppTheme.crimsonAccent,
                 ),
               ),
             ],
@@ -400,22 +403,22 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
           const SizedBox(height: 6),
           const Text(
             'The client indicated a misidentified recipient or incorrect phone number. This contact is permanently stored in \'blacklist_contacts\' and will never be scraped or contacted again.',
-            style: TextStyle(fontSize: 12, color: Color(0xFF7F1D1D), height: 1.3),
+            style: TextStyle(fontSize: 12, color: AppTheme.mutedSilver, height: 1.3),
           ),
           const SizedBox(height: 10),
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: AppTheme.withAlphaFactor(AppTheme.frostedCharcoalSlate, 0.9),
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: const Color(0xFFFECACA)),
+              border: Border.all(color: AppTheme.withAlphaFactor(AppTheme.crimsonAccent, 0.3)),
             ),
             child: const SelectableText(
               GeminiService.apologyExitMessage,
               style: TextStyle(
                 fontSize: 12.5,
                 fontWeight: FontWeight.w600,
-                color: Color(0xFF991B1B),
+                color: AppTheme.crispAlabaster,
               ),
             ),
           ),
@@ -427,7 +430,7 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
               icon: const Icon(Icons.send_rounded, size: 15),
               label: const Text('1-Tap: Send Apology & Archive (Zero Pitch)'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFDC2626),
+                backgroundColor: AppTheme.crimsonAccent,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 10),
               ),
@@ -858,14 +861,12 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
             // Paste Client Reply Field with Lock/Edit icon
             Container(
               decoration: BoxDecoration(
-                color: _isReplyLocked
-                    ? AppTheme.frostedCharcoalSlate
-                    : const Color(0xFFF8FAFC),
+                color: AppTheme.frostedCharcoalSlate,
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(
                   color: _isReplyLocked
-                      ? AppTheme.borderGrey
-                      : AppTheme.saudiEmerald,
+                      ? AppTheme.cyberBorder
+                      : AppTheme.mintEmerald,
                   width: _isReplyLocked ? 1 : 1.5,
                 ),
               ),
@@ -882,8 +883,8 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
                             _isReplyLocked ? Icons.lock : Icons.content_paste,
                             size: 14,
                             color: _isReplyLocked
-                                ? AppTheme.textMuted
-                                : AppTheme.saudiEmerald,
+                                ? AppTheme.mutedSilver
+                                : AppTheme.mintEmerald,
                           ),
                           const SizedBox(width: 6),
                           Text(
@@ -894,15 +895,15 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
                               fontSize: 11.5,
                               fontWeight: FontWeight.w700,
                               color: _isReplyLocked
-                                  ? AppTheme.textMuted
-                                  : AppTheme.saudiEmerald,
+                                  ? AppTheme.mutedSilver
+                                  : AppTheme.mintEmerald,
                             ),
                           ),
                         ],
                       ),
                       if (_isReplyLocked)
                         IconButton(
-                          icon: const Icon(Icons.edit_outlined, size: 16),
+                          icon: const Icon(Icons.edit_outlined, size: 16, color: AppTheme.electricCyan),
                           tooltip: 'Unlock to edit or re-paste',
                           padding: EdgeInsets.zero,
                           constraints: const BoxConstraints(),
@@ -918,12 +919,13 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
                     readOnly: _isReplyLocked,
                     maxLines: 3,
                     onChanged: _onClientReplyChanged,
+                    style: const TextStyle(fontSize: 13, color: AppTheme.crispAlabaster),
                     decoration: InputDecoration(
                       hintText: _isReplyLocked
                           ? 'Analyzed client reply'
                           : 'Paste WhatsApp reply here e.g. "كم السعر؟", "عندنا شركة حاليا", "غلطان بالرقم"...',
                       hintStyle: const TextStyle(
-                          fontSize: 12, color: AppTheme.textMuted),
+                          fontSize: 12, color: AppTheme.mutedSilver),
                       border: InputBorder.none,
                       isDense: true,
                     ),
@@ -937,7 +939,7 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
                           height: 14,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            color: AppTheme.saudiEmerald,
+                            color: AppTheme.mintEmerald,
                           ),
                         ),
                         SizedBox(width: 8),
@@ -945,7 +947,7 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
                           'Analyzing reply with Gemini 1.5 Flash...',
                           style: TextStyle(
                               fontSize: 11.5,
-                              color: AppTheme.saudiEmerald,
+                              color: AppTheme.mintEmerald,
                               fontWeight: FontWeight.w600),
                         ),
                       ],
@@ -965,9 +967,15 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
                         horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
                       color: ai.isWrongContact
-                          ? const Color(0xFFFEE2E2)
-                          : const Color(0xFFE6F4EA),
+                          ? AppTheme.withAlphaFactor(AppTheme.crimsonAccent, 0.2)
+                          : AppTheme.withAlphaFactor(AppTheme.mintEmerald, 0.2),
                       borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: ai.isWrongContact
+                            ? AppTheme.withAlphaFactor(AppTheme.crimsonAccent, 0.5)
+                            : AppTheme.withAlphaFactor(AppTheme.mintEmerald, 0.5),
+                        width: 0.8,
+                      ),
                     ),
                     child: Text(
                       'Sentiment: ${ai.sentiment}',
@@ -975,8 +983,8 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
                         color: ai.isWrongContact
-                            ? const Color(0xFFDC2626)
-                            : AppTheme.saudiEmerald,
+                            ? AppTheme.crimsonAccent
+                            : AppTheme.mintEmerald,
                       ),
                     ),
                   ),
@@ -985,7 +993,7 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
                     Text(
                       'Next Action: ${ai.nextFollowUpDate}',
                       style: const TextStyle(
-                          fontSize: 12, color: AppTheme.textMuted),
+                          fontSize: 12, color: AppTheme.mutedSilver),
                     ),
                 ],
               ),
@@ -996,9 +1004,9 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
                 width: double.infinity,
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF8FAFC),
+                  color: AppTheme.frostedCharcoalSlate,
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: AppTheme.borderGrey),
+                  border: Border.all(color: AppTheme.cyberBorder),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1015,7 +1023,7 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
                     Text(
                       ai.recommendedAction,
                       style: const TextStyle(
-                          fontSize: 12.5, color: AppTheme.textDark),
+                          fontSize: 12.5, color: AppTheme.mutedSilver),
                     ),
                   ],
                 ),
@@ -1027,9 +1035,9 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
                   width: double.infinity,
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFFFBEB),
+                    color: AppTheme.withAlphaFactor(AppTheme.royalGold, 0.12),
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: const Color(0xFFFDE68A)),
+                    border: Border.all(color: AppTheme.withAlphaFactor(AppTheme.royalGold, 0.35)),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -1039,13 +1047,13 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
                         style: TextStyle(
                             fontSize: 11.5,
                             fontWeight: FontWeight.w700,
-                            color: Color(0xFFB45309)),
+                            color: AppTheme.royalGold),
                       ),
                       const SizedBox(height: 3),
                       Text(
                         ai.painPoints,
                         style: const TextStyle(
-                            fontSize: 12, color: Color(0xFF78350F)),
+                            fontSize: 12, color: AppTheme.crispAlabaster),
                       ),
                     ],
                   ),
@@ -1058,9 +1066,9 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF0FDF4),
+                    color: AppTheme.frostedCharcoalSlate,
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: const Color(0xFFBBF7D0)),
+                    border: Border.all(color: AppTheme.cyberBorder),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -1073,7 +1081,7 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w700,
-                              color: AppTheme.saudiEmerald,
+                              color: AppTheme.mintEmerald,
                             ),
                           ),
                           Icon(Icons.auto_awesome,
@@ -1086,14 +1094,15 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
                         style: const TextStyle(
                             fontSize: 12.5,
                             height: 1.4,
-                            color: AppTheme.textDark),
+                            color: AppTheme.crispAlabaster),
                       ),
                       const SizedBox(height: 10),
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton.icon(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF006C4F),
+                            backgroundColor: AppTheme.saudiEmerald,
+                            foregroundColor: Colors.white,
                           ),
                           onPressed: () {
                             WhatsAppService.copyScriptAndDispatch(
@@ -1187,11 +1196,11 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
               );
 
               return Container(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF8FAFC),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: AppTheme.borderGrey),
+                  color: AppTheme.frostedCharcoalSlate,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppTheme.cyberBorder),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1199,17 +1208,20 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
                     SelectableText(
                       angledPitch,
                       style: const TextStyle(
-                          fontSize: 12,
-                          height: 1.4,
-                          color: AppTheme.textDark),
+                        fontSize: 13,
+                        height: 1.5,
+                        color: AppTheme.crispAlabaster,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 12),
                     Row(
                       children: [
                         Expanded(
                           child: ElevatedButton.icon(
                             style: ElevatedButton.styleFrom(
                               backgroundColor: AppTheme.saudiEmerald,
+                              foregroundColor: Colors.white,
                               padding: const EdgeInsets.symmetric(vertical: 10),
                             ),
                             onPressed: () {
@@ -1227,6 +1239,8 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
                         const SizedBox(width: 8),
                         OutlinedButton.icon(
                           style: OutlinedButton.styleFrom(
+                            foregroundColor: AppTheme.electricCyan,
+                            side: const BorderSide(color: AppTheme.cyberBorder),
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 10, vertical: 10),
                           ),
@@ -1284,13 +1298,13 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
                 width: double.infinity,
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF8FAFC),
+                  color: AppTheme.frostedCharcoalSlate,
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: AppTheme.borderGrey),
+                  border: Border.all(color: AppTheme.cyberBorder),
                 ),
                 child: const Text(
                   'No interactions logged yet. WhatsApp pitches and calls are automatically recorded.',
-                  style: TextStyle(fontSize: 12, color: AppTheme.textMuted),
+                  style: TextStyle(fontSize: 12, color: AppTheme.mutedSilver),
                 ),
               )
             else

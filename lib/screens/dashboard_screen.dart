@@ -616,11 +616,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
     return Scaffold(
       backgroundColor: AppTheme.obsidianVoid,
       appBar: AppBar(
+        titleSpacing: 16,
         title: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: 30,
-              height: 30,
+              width: 32,
+              height: 32,
               decoration: BoxDecoration(
                 color: AppTheme.withAlphaFactor(AppTheme.electricCyan, 0.15),
                 borderRadius: BorderRadius.circular(8),
@@ -631,106 +633,31 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
               child: const Icon(Icons.coffee,
                   color: AppTheme.electricCyan, size: 18),
             ),
-            const SizedBox(width: 10),
+            const SizedBox(width: 8),
             const Text(
-              'TEA BOY B2B CRM',
+              'TEA BOY',
               style: TextStyle(
-                fontSize: 17,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 0.4,
+                fontSize: 18,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 0.5,
+                color: AppTheme.crispAlabaster,
               ),
             ),
           ],
         ),
         actions: [
-          // Live GPS Toggle & Refresh
-          InkWell(
-            onTap: () async {
-              await HapticFeedback.selectionClick();
-              await ref.read(geoProvider.notifier).refreshGps();
-            },
-            borderRadius: BorderRadius.circular(8),
-            child: Container(
-              margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: AppTheme.withAlphaFactor(
-                  geoState.isGpsActive
-                      ? AppTheme.mintEmerald
-                      : AppTheme.electricCyan,
-                  0.15,
-                ),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: AppTheme.withAlphaFactor(
-                    geoState.isGpsActive
-                        ? AppTheme.mintEmerald
-                        : AppTheme.electricCyan,
-                    0.4,
-                  ),
-                ),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    geoState.isGpsActive
-                        ? Icons.gps_fixed
-                        : Icons.location_searching,
-                    size: 13,
-                    color: geoState.isGpsActive
-                        ? AppTheme.mintEmerald
-                        : AppTheme.electricCyan,
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    geoState.isGpsActive ? 'Live GPS' : 'Riyadh Hub',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      color: geoState.isGpsActive
-                          ? AppTheme.mintEmerald
-                          : AppTheme.electricCyan,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
+          // 1. Direct Lead Actions & Cleaner Button
           IconButton(
-            tooltip: 'Lead Actions & Cleaner',
+            tooltip: 'Lead Cleaner & Tools',
             icon: const Icon(Icons.cleaning_services_outlined,
-                color: AppTheme.mintEmerald, size: 21),
+                color: AppTheme.mintEmerald, size: 22),
             onPressed: () => _showLeadActionsSheet(context, allLeads),
           ),
+          // 2. Direct Settings & AI Configuration Button
           IconButton(
-            tooltip: 'Executive Pipeline Briefing',
-            icon: const Icon(Icons.assessment_outlined, size: 21),
-            onPressed: _shareExecutivePipelineReport,
-          ),
-          IconButton(
-            tooltip: 'Export Leads CSV',
-            icon: const Icon(Icons.table_chart_outlined, size: 20),
-            onPressed: _exportLeadsCsv,
-          ),
-          IconButton(
-            tooltip: 'Manual Scraper (⚡ Ingest Leads)',
-            icon: _isScraping
-                ? const SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(
-                      color: AppTheme.mintEmerald,
-                      strokeWidth: 2,
-                    ),
-                  )
-                : const Icon(Icons.bolt, color: AppTheme.mintEmerald, size: 22),
-            onPressed: _isScraping ? null : _runScraper,
-          ),
-          IconButton(
-            tooltip: 'Settings & AI Configuration',
+            tooltip: 'Settings & AI Engine',
             icon: const Icon(Icons.settings_outlined,
-                color: AppTheme.crispAlabaster, size: 21),
+                color: AppTheme.crispAlabaster, size: 22),
             onPressed: () async {
               await Navigator.push(
                 context,
@@ -739,6 +666,87 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
               ref.read(leadsProvider.notifier).refresh();
             },
           ),
+          // 3. Overflow Menu for Executive Tools & Utilities
+          PopupMenuButton<String>(
+            tooltip: 'More Operations',
+            icon: const Icon(Icons.more_vert, color: AppTheme.mutedSilver),
+            color: AppTheme.frostedCharcoalSlate,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: const BorderSide(color: AppTheme.cyberBorder),
+            ),
+            onSelected: (value) async {
+              if (value == 'briefing') {
+                _shareExecutivePipelineReport();
+              } else if (value == 'export_csv') {
+                _exportLeadsCsv();
+              } else if (value == 'scrape') {
+                if (!_isScraping) _runScraper();
+              } else if (value == 'gps') {
+                await HapticFeedback.selectionClick();
+                await ref.read(geoProvider.notifier).refreshGps();
+              }
+            },
+            itemBuilder: (ctx) => [
+              PopupMenuItem(
+                value: 'gps',
+                child: Row(
+                  children: [
+                    Icon(
+                      geoState.isGpsActive ? Icons.gps_fixed : Icons.location_searching,
+                      color: geoState.isGpsActive ? AppTheme.mintEmerald : AppTheme.electricCyan,
+                      size: 18,
+                    ),
+                    const SizedBox(width: 10),
+                    Text(
+                      geoState.isGpsActive ? 'Live GPS: Active' : 'Refresh Riyadh GPS',
+                      style: const TextStyle(color: AppTheme.crispAlabaster, fontSize: 13),
+                    ),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'briefing',
+                child: Row(
+                  children: [
+                    Icon(Icons.assessment_outlined, color: AppTheme.electricCyan, size: 18),
+                    const SizedBox(width: 10),
+                    Text(
+                      'Executive Briefing',
+                      style: const TextStyle(color: AppTheme.crispAlabaster, fontSize: 13),
+                    ),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'export_csv',
+                child: Row(
+                  children: [
+                    Icon(Icons.table_chart_outlined, color: AppTheme.royalGold, size: 18),
+                    const SizedBox(width: 10),
+                    Text(
+                      'Export Leads CSV',
+                      style: const TextStyle(color: AppTheme.crispAlabaster, fontSize: 13),
+                    ),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'scrape',
+                child: Row(
+                  children: [
+                    Icon(Icons.bolt, color: AppTheme.mintEmerald, size: 18),
+                    const SizedBox(width: 10),
+                    Text(
+                      'Run Web Scraper',
+                      style: const TextStyle(color: AppTheme.crispAlabaster, fontSize: 13),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(width: 4),
         ],
       ),
       body: SafeArea(
@@ -975,7 +983,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
 
                       return ListView.builder(
                         itemCount: tabLeads.length,
-                        padding: const EdgeInsets.only(bottom: 80),
+                        padding: const EdgeInsets.only(bottom: 110),
                         itemBuilder: (context, index) {
                           final lead = tabLeads[index];
                           return LeadCard(

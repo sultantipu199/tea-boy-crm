@@ -101,7 +101,7 @@ configurations.all {
 }
 
 tasks.whenTaskAdded { task ->
-    if (task.name.contains("AarMetadata") || task.name.contains("checkReleaseAarMetadata") || task.name.startsWith("cleanMerge")) {
+    if (task.name.contains("AarMetadata") || task.name.contains("checkReleaseAarMetadata") || task.name.startsWith("cleanMerge") || task.name.contains("NativeSymbol") || task.name.contains("NativeDebugMetadata")) {
         task.enabled = false
     }
 }
