@@ -129,8 +129,8 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        backgroundColor: AppTheme.obsidianVoid,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: const BorderSide(color: AppTheme.cyberBorder)),
         title: Row(
           children: const [
             Icon(Icons.auto_awesome, color: AppTheme.royalGold),
@@ -140,7 +140,7 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
-                color: AppTheme.slateNavy,
+                color: AppTheme.crispAlabaster,
               ),
             ),
           ],
@@ -203,10 +203,11 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: AppTheme.saudiEmerald,
-              onPrimary: Colors.white,
-              onSurface: AppTheme.slateNavy,
+            colorScheme: const ColorScheme.dark(
+              primary: AppTheme.electricCyan,
+              onPrimary: AppTheme.obsidianVoid,
+              surface: AppTheme.frostedCharcoalSlate,
+              onSurface: AppTheme.crispAlabaster,
             ),
           ),
           child: child!,
@@ -231,10 +232,11 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: AppTheme.saudiEmerald,
-              onPrimary: Colors.white,
-              onSurface: AppTheme.slateNavy,
+            colorScheme: const ColorScheme.dark(
+              primary: AppTheme.electricCyan,
+              onPrimary: AppTheme.obsidianVoid,
+              surface: AppTheme.frostedCharcoalSlate,
+              onSurface: AppTheme.crispAlabaster,
             ),
           ),
           child: child!,
@@ -553,7 +555,7 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
                       selectedColor: AppTheme.saudiEmerald,
                       checkmarkColor: Colors.white,
                       labelStyle: TextStyle(
-                        color: isSelected ? Colors.white : AppTheme.slateNavy,
+                        color: isSelected ? AppTheme.obsidianVoid : AppTheme.crispAlabaster,
                         fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                       ),
                       onSelected: (selected) {
@@ -666,7 +668,7 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
                               style: TextStyle(
                                 fontSize: 13.5,
                                 fontWeight: _followUpDate != null ? FontWeight.w700 : FontWeight.w400,
-                                color: _followUpDate != null ? AppTheme.slateNavy : AppTheme.textMuted,
+                                color: _followUpDate != null ? AppTheme.crispAlabaster : AppTheme.mutedSilver,
                               ),
                             ),
                           ],

@@ -28,9 +28,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
   bool _isScraping = false;
 
   final List<String> _tabTitles = [
-    '🟢 New (Unreached)',
-    '🟡 Contacted / Pending',
-    '🔴 Disqualified / Archive',
+    '🟢 New',
+    '🟡 In Progress',
+    '🔴 Disqualified',
   ];
 
   @override
@@ -197,6 +197,275 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
               fontSize: 14, fontWeight: FontWeight.w700, color: color),
         ),
       ],
+    );
+  }
+
+  void _showLeadActionsSheet(BuildContext context, List<Lead> allLeads) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) => Container(
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
+        decoration: BoxDecoration(
+          color: AppTheme.obsidianVoid,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          border: Border.all(color: AppTheme.cyberBorder),
+          boxShadow: [
+            BoxShadow(
+              // ignore: deprecated_member_use
+              color: Colors.black.withOpacity(0.6),
+              blurRadius: 20,
+              offset: const Offset(0, -4),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppTheme.cyberBorder,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: const [
+                    Icon(Icons.tune_rounded, color: AppTheme.electricCyan, size: 22),
+                    SizedBox(width: 10),
+                    Text(
+                      'Lead Actions & Cleaner',
+                      style: TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w800,
+                        color: AppTheme.crispAlabaster,
+                      ),
+                    ),
+                  ],
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: AppTheme.withAlphaFactor(AppTheme.mintEmerald, 0.15),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(
+                      color: AppTheme.withAlphaFactor(AppTheme.mintEmerald, 0.4),
+                    ),
+                  ),
+                  child: Text(
+                    '${allLeads.length} Leads',
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: AppTheme.mintEmerald,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            _buildActionTile(
+              icon: Icons.cleaning_services_outlined,
+              color: AppTheme.mintEmerald,
+              title: 'Clean & Deduplicate Leads',
+              subtitle: 'Scan database & purge duplicate records across company, phone & location',
+              onTap: () async {
+                Navigator.pop(ctx);
+                final pruned = await StorageService.instance.deduplicateDatabase();
+                ref.read(leadsProvider.notifier).refresh();
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        pruned > 0
+                            ? '🧹 Deduplication complete! Purged $pruned duplicate records.'
+                            : '✅ Pipeline is 100% clean! Zero duplicate records found.',
+                      ),
+                      backgroundColor: AppTheme.mintEmerald,
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                }
+              },
+            ),
+            const SizedBox(height: 8),
+            _buildActionTile(
+              icon: Icons.delete_sweep_outlined,
+              color: AppTheme.crimsonAccent,
+              title: 'Clear All Leads',
+              subtitle: 'Safely delete all stored leads to start with a fresh pipeline',
+              onTap: () {
+                Navigator.pop(ctx);
+                _confirmAndClearAllLeads();
+              },
+            ),
+            const SizedBox(height: 8),
+            _buildActionTile(
+              icon: Icons.replay_rounded,
+              color: AppTheme.royalGold,
+              title: 'Seed Sample Riyadh Leads',
+              subtitle: 'Populate verified Riyadh office tower listings (KAFD, Olaya, etc.)',
+              onTap: () async {
+                Navigator.pop(ctx);
+                await StorageService.instance.seedInitialCorporateLeads();
+                ref.read(leadsProvider.notifier).refresh();
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Sample Riyadh corporate leads seeded successfully!'),
+                      backgroundColor: AppTheme.mintEmerald,
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                }
+              },
+            ),
+            const SizedBox(height: 8),
+            _buildActionTile(
+              icon: Icons.settings_outlined,
+              color: AppTheme.electricCyan,
+              title: 'Open Full Settings & AI Engine',
+              subtitle: 'Configure Gemini 1.5 API key, blacklist rules & system parameters',
+              onTap: () async {
+                Navigator.pop(ctx);
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const SettingsScreen()),
+                );
+                ref.read(leadsProvider.notifier).refresh();
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _confirmAndClearAllLeads() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppTheme.obsidianVoid,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: AppTheme.cyberBorder),
+        ),
+        title: Row(
+          children: const [
+            Icon(Icons.warning_amber_rounded, color: AppTheme.crimsonAccent, size: 24),
+            SizedBox(width: 8),
+            Text(
+              'Clear All Leads?',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: AppTheme.crispAlabaster,
+              ),
+            ),
+          ],
+        ),
+        content: const Text(
+          'This will delete all stored corporate leads from your on-device storage. This action cannot be undone.\n\nAre you sure you want to proceed?',
+          style: TextStyle(fontSize: 13, color: AppTheme.mutedSilver, height: 1.4),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel', style: TextStyle(color: AppTheme.mutedSilver)),
+          ),
+          ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.crimsonAccent,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () => Navigator.pop(ctx, true),
+            icon: const Icon(Icons.delete_forever, size: 16),
+            label: const Text('Clear Everything', style: TextStyle(fontWeight: FontWeight.w700)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      await StorageService.instance.leadsBox.clear();
+      StorageService.instance.revision.value++;
+      ref.read(leadsProvider.notifier).refresh();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('All leads cleared from local storage.'),
+            backgroundColor: AppTheme.crimsonAccent,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
+  Widget _buildActionTile({
+    required IconData icon,
+    required Color color,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: AppTheme.withAlphaFactor(AppTheme.frostedCharcoalSlate, 0.8),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppTheme.cyberBorder),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppTheme.withAlphaFactor(color, 0.15),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(icon, color: color, size: 20),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w700,
+                      color: AppTheme.crispAlabaster,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: AppTheme.mutedSilver,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right, size: 18, color: AppTheme.mutedSilver),
+          ],
+        ),
+      ),
     );
   }
 
@@ -429,6 +698,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
             ),
           ),
           IconButton(
+            tooltip: 'Lead Actions & Cleaner',
+            icon: const Icon(Icons.cleaning_services_outlined,
+                color: AppTheme.mintEmerald, size: 21),
+            onPressed: () => _showLeadActionsSheet(context, allLeads),
+          ),
+          IconButton(
             tooltip: 'Executive Pipeline Briefing',
             icon: const Icon(Icons.assessment_outlined, size: 21),
             onPressed: _shareExecutivePipelineReport,
@@ -453,13 +728,15 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
             onPressed: _isScraping ? null : _runScraper,
           ),
           IconButton(
-            tooltip: 'Settings',
-            icon: const Icon(Icons.settings_outlined, size: 20),
+            tooltip: 'Settings & AI Configuration',
+            icon: const Icon(Icons.settings_outlined,
+                color: AppTheme.crispAlabaster, size: 21),
             onPressed: () async {
               await Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const SettingsScreen()),
               );
+              ref.read(leadsProvider.notifier).refresh();
             },
           ),
         ],
@@ -542,124 +819,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
 
                 // Pipeline KPI Header
                 PipelineKpiHeader(leads: allLeads),
-
-                // Executive Quick Manual Scraper Action Bar
-                Container(
-                  margin: const EdgeInsets.fromLTRB(16, 8, 16, 6),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                  decoration: BoxDecoration(
-                    color: AppTheme.withAlphaFactor(
-                        AppTheme.frostedCharcoalSlate, 0.92),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color:
-                          AppTheme.withAlphaFactor(AppTheme.mintEmerald, 0.4),
-                      width: 1,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppTheme.withAlphaFactor(
-                            AppTheme.mintEmerald, 0.08),
-                        blurRadius: 10,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: AppTheme.withAlphaFactor(
-                              AppTheme.mintEmerald, 0.15),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: const Icon(Icons.bolt,
-                            color: AppTheme.mintEmerald, size: 20),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                const Text(
-                                  'Manual Scraper',
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w800,
-                                    color: AppTheme.crispAlabaster,
-                                  ),
-                                ),
-                                const SizedBox(width: 6),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 6, vertical: 1.5),
-                                  decoration: BoxDecoration(
-                                    color: AppTheme.withAlphaFactor(
-                                        AppTheme.electricCyan, 0.15),
-                                    borderRadius: BorderRadius.circular(4),
-                                    border: Border.all(
-                                      color: AppTheme.withAlphaFactor(
-                                          AppTheme.electricCyan, 0.5),
-                                      width: 0.6,
-                                    ),
-                                  ),
-                                  child: Text(
-                                    selectedCat.label,
-                                    style: const TextStyle(
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w700,
-                                      color: AppTheme.electricCyan,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 2),
-                            const Text(
-                              'Instant KSA corporate offices ingestion',
-                              style: TextStyle(
-                                  fontSize: 11, color: AppTheme.mutedSilver),
-                            ),
-                          ],
-                        ),
-                      ),
-                      ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppTheme.mintEmerald,
-                          foregroundColor: Colors.white,
-                          elevation: 2,
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 8),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                        onPressed: _isScraping ? null : _runScraper,
-                        icon: _isScraping
-                            ? const SizedBox(
-                                width: 13,
-                                height: 13,
-                                child: CircularProgressIndicator(
-                                  color: Colors.white,
-                                  strokeWidth: 2,
-                                ),
-                              )
-                            : const Icon(Icons.download, size: 15),
-                        label: Text(
-                          _isScraping ? 'Scraping...' : 'Scrape Now',
-                          style: const TextStyle(
-                            fontSize: 11.5,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
 
                 // Segmented Tabs Bar
                 Container(

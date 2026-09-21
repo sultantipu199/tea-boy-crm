@@ -110,10 +110,11 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: AppTheme.saudiEmerald,
-              onPrimary: Colors.white,
-              onSurface: AppTheme.slateNavy,
+            colorScheme: const ColorScheme.dark(
+              primary: AppTheme.electricCyan,
+              onPrimary: AppTheme.obsidianVoid,
+              surface: AppTheme.frostedCharcoalSlate,
+              onSurface: AppTheme.crispAlabaster,
             ),
           ),
           child: child!,
@@ -247,7 +248,7 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
         const SnackBar(
           content: Text(
               'Apology message sent & contact permanently archived in blacklist.'),
-          backgroundColor: AppTheme.slateNavy,
+          backgroundColor: AppTheme.crispAlabaster,
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -691,7 +692,7 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w700,
-                color: AppTheme.slateNavy,
+                color: AppTheme.crispAlabaster,
               ),
             ),
             const SizedBox(height: 12),
@@ -711,7 +712,8 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
                   ),
                   label: Text(req,
                       style: const TextStyle(fontWeight: FontWeight.w600)),
-                  backgroundColor: const Color(0xFFF1F5F9),
+                  backgroundColor: AppTheme.frostedCharcoalSlate,
+                  labelStyle: const TextStyle(color: AppTheme.crispAlabaster, fontWeight: FontWeight.w600),
                   side: const BorderSide(color: AppTheme.borderGrey),
                 );
               }).toList(),
@@ -767,7 +769,7 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
                           fontWeight: FontWeight.w700,
                           color: lead.isFollowUpDue
                               ? Colors.red
-                              : AppTheme.slateNavy,
+                              : AppTheme.crispAlabaster,
                         ),
                       ),
                       Text(
@@ -838,7 +840,7 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
                       style: TextStyle(
                         fontSize: 14.5,
                         fontWeight: FontWeight.w700,
-                        color: AppTheme.slateNavy,
+                        color: AppTheme.crispAlabaster,
                       ),
                     ),
                   ],
@@ -857,7 +859,7 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
             Container(
               decoration: BoxDecoration(
                 color: _isReplyLocked
-                    ? const Color(0xFFF1F5F9)
+                    ? AppTheme.frostedCharcoalSlate
                     : const Color(0xFFF8FAFC),
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(
@@ -1006,7 +1008,7 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
-                        color: AppTheme.slateNavy,
+                        color: AppTheme.crispAlabaster,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -1133,7 +1135,7 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
-                    color: AppTheme.slateNavy,
+                    color: AppTheme.crispAlabaster,
                   ),
                 ),
               ],
@@ -1269,7 +1271,7 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
-                        color: AppTheme.slateNavy,
+                        color: AppTheme.crispAlabaster,
                       ),
                     ),
                   ],
@@ -1325,7 +1327,7 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
                                   style: const TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w700,
-                                    color: AppTheme.slateNavy,
+                                    color: AppTheme.crispAlabaster,
                                   ),
                                 ),
                                 Text(
@@ -1342,7 +1344,7 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
                               act.note,
                               style: const TextStyle(
                                 fontSize: 12,
-                                color: AppTheme.slateNavy,
+                                color: AppTheme.crispAlabaster,
                               ),
                             ),
                           ],
@@ -1371,7 +1373,7 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w700,
-                color: AppTheme.slateNavy,
+                color: AppTheme.crispAlabaster,
               ),
             ),
             const SizedBox(height: 10),

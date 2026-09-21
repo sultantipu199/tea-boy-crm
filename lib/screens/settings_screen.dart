@@ -45,7 +45,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           content: Text(key.isEmpty
               ? 'API Key cleared. Reverting to local heuristic forecasting.'
               : 'Gemini API Key saved securely to on-device storage.'),
-          backgroundColor: AppTheme.saudiEmerald,
+          backgroundColor: AppTheme.mintEmerald,
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -99,18 +99,41 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Seed Sample Riyadh Leads'),
+        backgroundColor: AppTheme.obsidianVoid,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: AppTheme.cyberBorder),
+        ),
+        title: Row(
+          children: const [
+            Icon(Icons.replay_rounded, color: AppTheme.royalGold, size: 22),
+            SizedBox(width: 8),
+            Text(
+              'Seed Sample Riyadh Leads',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: AppTheme.crispAlabaster,
+              ),
+            ),
+          ],
+        ),
         content: const Text(
           'This will populate the database with realistic Riyadh corporate office tower leads. Any existing records matching the composite keys will be preserved and not duplicated.',
+          style: TextStyle(fontSize: 13, color: AppTheme.mutedSilver, height: 1.4),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
+            child: const Text('Cancel', style: TextStyle(color: AppTheme.mutedSilver)),
           ),
           ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.royalGold,
+              foregroundColor: AppTheme.obsidianVoid,
+            ),
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Seed Leads'),
+            child: const Text('Seed Leads', style: TextStyle(fontWeight: FontWeight.w700)),
           ),
         ],
       ),
@@ -122,7 +145,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Sample leads seeded successfully!'),
-            backgroundColor: AppTheme.saudiEmerald,
+            backgroundColor: AppTheme.mintEmerald,
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -135,21 +158,42 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Clear All Leads'),
+        backgroundColor: AppTheme.obsidianVoid,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: AppTheme.cyberBorder),
+        ),
+        title: Row(
+          children: const [
+            Icon(Icons.warning_amber_rounded, color: AppTheme.crimsonAccent, size: 24),
+            SizedBox(width: 8),
+            Text(
+              'Clear All Leads?',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: AppTheme.crispAlabaster,
+              ),
+            ),
+          ],
+        ),
         content: const Text(
-          'Warning: This will delete ALL stored corporate leads from local Hive storage. This action cannot be undone.',
+          'Warning: This will delete ALL stored corporate leads from local Hive storage. This action cannot be undone.\n\nAre you sure you want to proceed?',
+          style: TextStyle(fontSize: 13, color: AppTheme.mutedSilver, height: 1.4),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
+            child: const Text('Cancel', style: TextStyle(color: AppTheme.mutedSilver)),
           ),
-          ElevatedButton(
+          ElevatedButton.icon(
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.statusDisqualified,
+              backgroundColor: AppTheme.crimsonAccent,
+              foregroundColor: Colors.white,
             ),
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Clear All'),
+            icon: const Icon(Icons.delete_forever, size: 16),
+            label: const Text('Clear All', style: TextStyle(fontWeight: FontWeight.w700)),
           ),
         ],
       ),
@@ -163,7 +207,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('All leads cleared from local storage.'),
-            backgroundColor: AppTheme.slateNavy,
+            backgroundColor: AppTheme.crimsonAccent,
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -186,7 +230,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           content: Text(
             'Scraping completed: +${result.newLeadsAdded} fresh leads added (${result.skippedDuplicates} duplicates, ${result.skippedBlacklisted} blacklisted).',
           ),
-          backgroundColor: AppTheme.saudiEmerald,
+          backgroundColor: AppTheme.mintEmerald,
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -201,452 +245,504 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return PopScope(
       canPop: true,
       child: Scaffold(
-      resizeToAvoidBottomInset: true,
-      appBar: AppBar(
-        title: const Text(
-          'CRM Settings & AI Engine',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+        backgroundColor: AppTheme.obsidianVoid,
+        resizeToAvoidBottomInset: true,
+        appBar: AppBar(
+          title: const Text(
+            'CRM Settings & Database',
+            style: TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.3,
+            ),
+          ),
         ),
-      ),
-      body: SafeArea(
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 1000),
-            child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Gemini AI Configuration Card
-              Card(
-                elevation: 1,
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: const [
-                          Icon(Icons.auto_awesome, color: AppTheme.royalGold, size: 20),
-                          SizedBox(width: 8),
-                          Text(
-                            'Gemini 1.5 Flash Configuration',
-                            style: TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w700,
-                              color: AppTheme.slateNavy,
-                            ),
+        body: SafeArea(
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 900),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Section 1: Lead Database & Cleaner Maintenance (Requested by User)
+                    _buildFrostedSectionCard(
+                      icon: Icons.storage_rounded,
+                      iconColor: AppTheme.mintEmerald,
+                      title: 'Lead Database & Storage',
+                      badgeWidget: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: AppTheme.withAlphaFactor(AppTheme.mintEmerald, 0.15),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(
+                            color: AppTheme.withAlphaFactor(AppTheme.mintEmerald, 0.4),
                           ),
-                        ],
-                      ),
-                      const SizedBox(height: 6),
-                      const Text(
-                        'Enter your Google Gemini API key to enable live AI deal scoring and automated Arabic/English WhatsApp pitch generation. Zero GitHub Secrets required: this key is stored strictly on your device.',
-                        style: TextStyle(fontSize: 12, color: AppTheme.textMuted),
-                      ),
-                      const SizedBox(height: 14),
-                      TextFormField(
-                        controller: _apiKeyController,
-                        obscureText: _obscureKey,
-                        decoration: InputDecoration(
-                          hintText: 'AIzaSy...',
-                          prefixIcon: const Icon(Icons.key_outlined, size: 18),
-                          suffixIcon: IconButton(
-                            icon: Icon(
-                              _obscureKey ? Icons.visibility_off : Icons.visibility,
-                              size: 18,
-                            ),
-                            onPressed: () {
-                              setState(() => _obscureKey = !_obscureKey);
-                            },
+                        ),
+                        child: Text(
+                          '${allLeads.length} Leads Stored',
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: AppTheme.mintEmerald,
                           ),
                         ),
                       ),
-                      if (_testResultStatus != null) ...[
-                        const SizedBox(height: 10),
-                        Text(
-                          _testResultStatus!,
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: _testResultStatus!.startsWith('Success')
-                                ? AppTheme.saudiEmerald
-                                : AppTheme.statusDisqualified,
-                          ),
-                        ),
-                      ],
-                      const SizedBox(height: 14),
-                      Row(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Expanded(
-                            child: OutlinedButton.icon(
-                              onPressed: _isTestingKey ? null : _testApiKey,
-                              icon: _isTestingKey
-                                  ? const SizedBox(
-                                      width: 14,
-                                      height: 14,
-                                      child: CircularProgressIndicator(strokeWidth: 2),
-                                    )
-                                  : const Icon(Icons.bolt, size: 16),
-                              label: const Text('Test Key'),
-                            ),
+                          const Text(
+                            'All corporate leads, statuses, and custom notes are persisted offline in encrypted local Hive storage. Zero data leaves your device unless explicitly shared.',
+                            style: TextStyle(fontSize: 12, color: AppTheme.mutedSilver, height: 1.4),
                           ),
-                          const SizedBox(width: 10),
-                          Expanded(
+                          const SizedBox(height: 14),
+                          // Clean & Deduplicate Full-Width Button
+                          SizedBox(
+                            width: double.infinity,
                             child: ElevatedButton.icon(
-                              onPressed: _saveApiKey,
-                              icon: const Icon(Icons.save, size: 16),
-                              label: const Text('Save Key'),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 16),
-
-              // Database & Storage Operations
-              Card(
-                elevation: 1,
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: const [
-                          Icon(Icons.storage_outlined, color: AppTheme.saudiEmerald, size: 20),
-                          SizedBox(width: 8),
-                          Text(
-                            'Hive Offline CRM Storage',
-                            style: TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w700,
-                              color: AppTheme.slateNavy,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text('Total Stored Leads:', style: TextStyle(fontSize: 13)),
-                          Text(
-                            '${allLeads.length}',
-                            style: const TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w800,
-                              color: AppTheme.saudiEmerald,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const Divider(height: 20, color: AppTheme.borderGrey),
-                      const Text(
-                        'Deduplication & Timestamps Rules:',
-                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
-                      ),
-                      const SizedBox(height: 4),
-                      const Text(
-                        '• Unique Primary Key: (companyName_sanitizedPhone). Existing leads are never duplicated or overwritten upon re-scraping.\n• Timestamps: Each lead contains date_added (YYYY-MM-DD) for chronological tracking.',
-                        style: TextStyle(fontSize: 11.5, color: AppTheme.textMuted, height: 1.4),
-                      ),
-                      const SizedBox(height: 14),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: OutlinedButton.icon(
-                              onPressed: _resetToSeedData,
-                              icon: const Icon(Icons.replay, size: 16),
-                              label: const Text('Seed Leads'),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: OutlinedButton.icon(
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: AppTheme.statusDisqualified,
-                                side: const BorderSide(color: AppTheme.statusDisqualified),
-                              ),
-                              onPressed: _clearAllLeads,
-                              icon: const Icon(Icons.delete_sweep, size: 16),
-                              label: const Text('Clear DB'),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 10),
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton.icon(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppTheme.mintEmerald,
-                            foregroundColor: AppTheme.obsidianVoid,
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                          ),
-                          onPressed: () async {
-                            final pruned = await StorageService.instance.deduplicateDatabase();
-                            if (mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    pruned > 0
-                                        ? '🧹 Deduplication complete! Purged $pruned duplicate records.'
-                                        : '✅ Zero duplicates found! Pipeline is 100% clean.',
-                                  ),
-                                  backgroundColor: AppTheme.saudiEmerald,
-                                  behavior: SnackBarBehavior.floating,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppTheme.mintEmerald,
+                                foregroundColor: AppTheme.obsidianVoid,
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
                                 ),
-                              );
-                              setState(() {});
-                            }
-                          },
-                          icon: const Icon(Icons.cleaning_services, size: 18),
-                          label: const Text(
-                            '🧹 Clean & Deduplicate Database',
-                            style: TextStyle(fontWeight: FontWeight.w700),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 16),
-
-              // Manual Corporate Scraper Pipeline Card
-              Card(
-                elevation: 1,
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: const [
-                          Icon(Icons.bolt, color: AppTheme.saudiEmerald, size: 20),
-                          SizedBox(width: 8),
-                          Text(
-                            'Manual Corporate Scraper Pipeline',
-                            style: TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w700,
-                              color: AppTheme.slateNavy,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 6),
-                      const Text(
-                        'Trigger on-demand scraping across Greater Riyadh & KSA commercial clusters at any time. Generates fresh registrations, strictly deduplicates via (company_sanitizedPhone), and excludes blacklisted contacts.',
-                        style: TextStyle(fontSize: 12, color: AppTheme.textMuted),
-                      ),
-                      const SizedBox(height: 12),
-                      const Text(
-                        'Target Cluster / Scope:',
-                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
-                      ),
-                      const SizedBox(height: 6),
-                      Wrap(
-                        spacing: 6,
-                        runSpacing: 6,
-                        children: RiyadhClusterCategory.values.map((cat) {
-                          final isSel = cat == _selectedScraperCluster;
-                          return ChoiceChip(
-                            label: Text(
-                              cat.label,
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: isSel ? FontWeight.w700 : FontWeight.w500,
+                              ),
+                              onPressed: () async {
+                                final pruned = await StorageService.instance.deduplicateDatabase();
+                                if (mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        pruned > 0
+                                            ? '🧹 Deduplication complete! Purged $pruned duplicate records.'
+                                            : '✅ Zero duplicates found! Pipeline is 100% clean.',
+                                      ),
+                                      backgroundColor: AppTheme.mintEmerald,
+                                      behavior: SnackBarBehavior.floating,
+                                    ),
+                                  );
+                                  setState(() {});
+                                }
+                              },
+                              icon: const Icon(Icons.cleaning_services_rounded, size: 18),
+                              label: const Text(
+                                '🧹 Clean & Deduplicate Database',
+                                style: TextStyle(fontWeight: FontWeight.w800),
                               ),
                             ),
-                            selected: isSel,
-                            onSelected: (_) {
-                              setState(() => _selectedScraperCluster = cat);
-                            },
-                            selectedColor: AppTheme.saudiEmerald,
-                            labelStyle: TextStyle(
-                              color: isSel ? Colors.white : AppTheme.slateNavy,
-                            ),
-                          );
-                        }).toList(),
-                      ),
-                      const SizedBox(height: 14),
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton.icon(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppTheme.saudiEmerald,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
                           ),
-                          onPressed: _isScraping ? null : _runManualScrape,
-                          icon: _isScraping
-                              ? const SizedBox(
-                                  width: 16,
-                                  height: 16,
-                                  child: CircularProgressIndicator(
-                                    color: Colors.white,
-                                    strokeWidth: 2,
-                                  ),
-                                )
-                              : const Icon(Icons.bolt, size: 18),
-                          label: Text(
-                            _isScraping
-                                ? 'Scraping Corporate Listings...'
-                                : 'Run Manual Scraper Now',
-                            style: const TextStyle(fontWeight: FontWeight.w800),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 16),
-
-              // Wrong-Number Guard & Local Blacklist Box
-              Card(
-                elevation: 1,
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
+                          const SizedBox(height: 10),
+                          // Seed & Clear Buttons Row
                           Row(
-                            children: const [
-                              Icon(Icons.gpp_bad_outlined, color: AppTheme.statusDisqualified, size: 20),
-                              SizedBox(width: 8),
-                              Text(
-                                'Wrong-Number Guard Blacklist',
-                                style: TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppTheme.slateNavy,
+                            children: [
+                              Expanded(
+                                child: OutlinedButton.icon(
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: AppTheme.royalGold,
+                                    side: const BorderSide(color: AppTheme.royalGold),
+                                    padding: const EdgeInsets.symmetric(vertical: 11),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                  ),
+                                  onPressed: _resetToSeedData,
+                                  icon: const Icon(Icons.replay_rounded, size: 16),
+                                  label: const Text('Seed Sample Leads',
+                                      style: TextStyle(fontWeight: FontWeight.w700)),
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: OutlinedButton.icon(
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: AppTheme.crimsonAccent,
+                                    side: const BorderSide(color: AppTheme.crimsonAccent),
+                                    padding: const EdgeInsets.symmetric(vertical: 11),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                  ),
+                                  onPressed: _clearAllLeads,
+                                  icon: const Icon(Icons.delete_sweep_outlined, size: 16),
+                                  label: const Text('Clear All Leads',
+                                      style: TextStyle(fontWeight: FontWeight.w700)),
                                 ),
                               ),
                             ],
                           ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFFEE2E2),
-                              borderRadius: BorderRadius.circular(10),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // Section 2: Gemini 1.5 Flash AI Engine Configuration
+                    _buildFrostedSectionCard(
+                      icon: Icons.auto_awesome,
+                      iconColor: AppTheme.royalGold,
+                      title: 'Gemini 1.5 Flash AI Engine',
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Enter your Google Gemini API key to enable live AI deal scoring, objection handling, and automated bilingual WhatsApp pitches. Stored securely on your device.',
+                            style: TextStyle(fontSize: 12, color: AppTheme.mutedSilver, height: 1.4),
+                          ),
+                          const SizedBox(height: 14),
+                          TextFormField(
+                            controller: _apiKeyController,
+                            obscureText: _obscureKey,
+                            style: const TextStyle(color: AppTheme.crispAlabaster, fontSize: 13),
+                            decoration: InputDecoration(
+                              hintText: 'Enter AIzaSy... API key',
+                              prefixIcon: const Icon(Icons.key_outlined, size: 18, color: AppTheme.electricCyan),
+                              suffixIcon: IconButton(
+                                icon: Icon(
+                                  _obscureKey ? Icons.visibility_off : Icons.visibility,
+                                  size: 18,
+                                  color: AppTheme.mutedSilver,
+                                ),
+                                onPressed: () {
+                                  setState(() => _obscureKey = !_obscureKey);
+                                },
+                              ),
                             ),
-                            child: Text(
-                              '${blacklisted.length} Blacklisted',
-                              style: const TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
-                                color: Color(0xFFDC2626),
+                          ),
+                          if (_testResultStatus != null) ...[
+                            const SizedBox(height: 10),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: AppTheme.withAlphaFactor(
+                                  _testResultStatus!.startsWith('Success')
+                                      ? AppTheme.mintEmerald
+                                      : AppTheme.crimsonAccent,
+                                  0.12,
+                                ),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: AppTheme.withAlphaFactor(
+                                    _testResultStatus!.startsWith('Success')
+                                        ? AppTheme.mintEmerald
+                                        : AppTheme.crimsonAccent,
+                                    0.3,
+                                  ),
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    _testResultStatus!.startsWith('Success')
+                                        ? Icons.check_circle_outline
+                                        : Icons.error_outline,
+                                    size: 16,
+                                    color: _testResultStatus!.startsWith('Success')
+                                        ? AppTheme.mintEmerald
+                                        : AppTheme.crimsonAccent,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      _testResultStatus!,
+                                      style: TextStyle(
+                                        fontSize: 11.5,
+                                        fontWeight: FontWeight.w600,
+                                        color: _testResultStatus!.startsWith('Success')
+                                            ? AppTheme.mintEmerald
+                                            : AppTheme.crimsonAccent,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                          const SizedBox(height: 14),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: OutlinedButton.icon(
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: AppTheme.electricCyan,
+                                    side: const BorderSide(color: AppTheme.electricCyan),
+                                    padding: const EdgeInsets.symmetric(vertical: 11),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                  ),
+                                  onPressed: _isTestingKey ? null : _testApiKey,
+                                  icon: _isTestingKey
+                                      ? const SizedBox(
+                                          width: 14,
+                                          height: 14,
+                                          child: CircularProgressIndicator(strokeWidth: 2),
+                                        )
+                                      : const Icon(Icons.bolt, size: 16),
+                                  label: const Text('Test Connection',
+                                      style: TextStyle(fontWeight: FontWeight.w700)),
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: ElevatedButton.icon(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppTheme.electricCyan,
+                                    foregroundColor: AppTheme.obsidianVoid,
+                                    padding: const EdgeInsets.symmetric(vertical: 11),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                  ),
+                                  onPressed: _saveApiKey,
+                                  icon: const Icon(Icons.save, size: 16),
+                                  label: const Text('Save Key',
+                                      style: TextStyle(fontWeight: FontWeight.w800)),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // Section 3: Manual Corporate Scraper Pipeline
+                    _buildFrostedSectionCard(
+                      icon: Icons.bolt,
+                      iconColor: AppTheme.electricCyan,
+                      title: 'Manual Corporate Scraper Pipeline',
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Trigger real-time scraping across Greater Riyadh & KSA commercial clusters. Strictly deduplicates via multi-field SHA-256 and respects your blacklist.',
+                            style: TextStyle(fontSize: 12, color: AppTheme.mutedSilver, height: 1.4),
+                          ),
+                          const SizedBox(height: 12),
+                          const Text(
+                            'Target Cluster Scope:',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: AppTheme.crispAlabaster,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Wrap(
+                            spacing: 6,
+                            runSpacing: 6,
+                            children: RiyadhClusterCategory.values.map((cat) {
+                              final isSel = cat == _selectedScraperCluster;
+                              return ChoiceChip(
+                                label: Text(cat.label),
+                                selected: isSel,
+                                onSelected: (_) {
+                                  setState(() => _selectedScraperCluster = cat);
+                                },
+                                selectedColor: AppTheme.electricCyan,
+                                backgroundColor: AppTheme.withAlphaFactor(
+                                    AppTheme.frostedCharcoalSlate, 0.9),
+                                labelStyle: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: isSel ? FontWeight.w700 : FontWeight.w500,
+                                  color: isSel ? AppTheme.obsidianVoid : AppTheme.crispAlabaster,
+                                ),
+                                side: BorderSide(
+                                  color: isSel ? AppTheme.electricCyan : AppTheme.cyberBorder,
+                                ),
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              );
+                            }).toList(),
+                          ),
+                          const SizedBox(height: 14),
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton.icon(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppTheme.saudiEmerald,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                              ),
+                              onPressed: _isScraping ? null : _runManualScrape,
+                              icon: _isScraping
+                                  ? const SizedBox(
+                                      width: 16,
+                                      height: 16,
+                                      child: CircularProgressIndicator(
+                                        color: Colors.white,
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                  : const Icon(Icons.bolt, size: 18),
+                              label: Text(
+                                _isScraping
+                                    ? 'Scraping Corporate Listings...'
+                                    : 'Run Manual Scraper Now',
+                                style: const TextStyle(fontWeight: FontWeight.w800),
                               ),
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 10),
-                      const Text(
-                        'Persistent Hive Box: \'blacklist_contacts\'. Numbers flagged as wrong contact or non-decision makers are permanently excluded from scraping and outreach.',
-                        style: TextStyle(fontSize: 11.5, color: AppTheme.textMuted, height: 1.4),
-                      ),
-                      if (blacklisted.isNotEmpty) ...[
-                        const SizedBox(height: 12),
-                        Container(
-                          constraints: const BoxConstraints(maxHeight: 160),
-                          child: ListView.separated(
-                            shrinkWrap: true,
-                            itemCount: blacklisted.length,
-                            separatorBuilder: (_, __) => const Divider(height: 8),
-                            itemBuilder: (ctx, i) {
-                              final b = blacklisted[i];
-                              return Row(
-                                children: [
-                                  const Icon(Icons.block, size: 14, color: AppTheme.statusDisqualified),
-                                  const SizedBox(width: 6),
-                                  Expanded(
-                                    child: Text(
-                                      '${b['phone']} - ${b['reason'] ?? 'Wrong Contact'}',
-                                      style: const TextStyle(fontSize: 11.5, color: AppTheme.slateNavy),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                  IconButton(
-                                    icon: const Icon(Icons.delete_outline, size: 16, color: Colors.grey),
-                                    tooltip: 'Remove from blacklist',
-                                    onPressed: () async {
-                                      await StorageService.instance.removeFromBlacklist(b['phone'].toString());
-                                      setState(() {});
-                                    },
-                                  ),
-                                ],
-                              );
-                            },
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // Section 4: Wrong-Number Guard & Local Blacklist Box
+                    _buildFrostedSectionCard(
+                      icon: Icons.gpp_bad_outlined,
+                      iconColor: AppTheme.crimsonAccent,
+                      title: 'Wrong-Number Guard Blacklist',
+                      badgeWidget: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: AppTheme.withAlphaFactor(AppTheme.crimsonAccent, 0.15),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(
+                            color: AppTheme.withAlphaFactor(AppTheme.crimsonAccent, 0.4),
                           ),
                         ),
-                      ],
-                    ],
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 16),
-
-              // Enterprise Specs & Hardening Summary
-              Card(
-                elevation: 1,
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: const [
-                          Icon(Icons.verified_user_outlined, color: AppTheme.slateNavy, size: 20),
-                          SizedBox(width: 8),
-                          Text(
-                            'Enterprise Architecture Specs',
-                            style: TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w700,
-                              color: AppTheme.slateNavy,
-                            ),
+                        child: Text(
+                          '${blacklisted.length} Blacklisted',
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: AppTheme.crimsonAccent,
                           ),
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Numbers flagged as wrong contact or non-decision makers are permanently excluded from scraping and outreach.',
+                            style: TextStyle(fontSize: 12, color: AppTheme.mutedSilver, height: 1.4),
+                          ),
+                          if (blacklisted.isNotEmpty) ...[
+                            const SizedBox(height: 12),
+                            Container(
+                              constraints: const BoxConstraints(maxHeight: 160),
+                              decoration: BoxDecoration(
+                                color: AppTheme.withAlphaFactor(AppTheme.obsidianVoid, 0.5),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: AppTheme.cyberBorder),
+                              ),
+                              child: ListView.separated(
+                                shrinkWrap: true,
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                itemCount: blacklisted.length,
+                                separatorBuilder: (_, __) => const Divider(height: 8),
+                                itemBuilder: (ctx, i) {
+                                  final b = blacklisted[i];
+                                  return Row(
+                                    children: [
+                                      const Icon(Icons.block, size: 14, color: AppTheme.crimsonAccent),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(
+                                          '${b['phone']} - ${b['reason'] ?? 'Wrong Contact'}',
+                                          style: const TextStyle(fontSize: 12, color: AppTheme.crispAlabaster),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                      IconButton(
+                                        icon: const Icon(Icons.delete_outline, size: 16, color: AppTheme.mutedSilver),
+                                        tooltip: 'Remove from blacklist',
+                                        onPressed: () async {
+                                          await StorageService.instance.removeFromBlacklist(b['phone'].toString());
+                                          setState(() {});
+                                        },
+                                      ),
+                                    ],
+                                  );
+                                },
+                              ),
+                            ),
+                          ],
                         ],
                       ),
-                      const SizedBox(height: 12),
-                      _buildSpecRow('Target Market', 'Riyadh Corporate Sector (KAFD, Olaya, etc.)'),
-                      _buildSpecRow('Staffing Specialization', 'Cleaners, Pantry Staff, Tea Boys'),
-                      _buildSpecRow('Android Compatibility', 'Android 11 through Android 15'),
-                      _buildSpecRow('Gradle & Build Hardening', 'Gradle 8.5 with Debug Keystore Signing in Release'),
-                      _buildSpecRow('WhatsApp Dispatch', 'BiDi Isolated Native & Wa.me Fallback'),
-                      _buildSpecRow('CI/CD Pipeline', 'GitHub Actions Automated Release APK Build'),
-                      _buildSpecRow('GitHub Secrets', '0 Required (100% Self-Contained)'),
-                    ],
-                  ),
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // Section 5: Enterprise Specs
+                    _buildFrostedSectionCard(
+                      icon: Icons.verified_user_outlined,
+                      iconColor: AppTheme.electricCyan,
+                      title: 'Enterprise Architecture Specs',
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildSpecRow('Target Market', 'Riyadh Corporate Sector (KAFD, Olaya, etc.)'),
+                          _buildSpecRow('Staffing Specialization', 'Cleaners, Pantry Staff, Tea Boys'),
+                          _buildSpecRow('Android Compatibility', 'Android 11 through Android 15+'),
+                          _buildSpecRow('Gradle & Signing', 'Dual V1 (JAR) + V2/V3 (APK Signature Scheme)'),
+                          _buildSpecRow('WhatsApp Dispatch', 'BiDi Isolated Native & Wa.me Fallback'),
+                          _buildSpecRow('GitHub Secrets', '0 Required (100% Self-Contained)'),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 32),
+                  ],
                 ),
               ),
-
-              const SizedBox(height: 24),
-            ],
-          ),
-        ),
+            ),
           ),
         ),
       ),
-    ),
+    );
+  }
+
+  Widget _buildFrostedSectionCard({
+    required IconData icon,
+    required Color iconColor,
+    required String title,
+    Widget? badgeWidget,
+    required Widget child,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: AppTheme.glassBoxDecoration(
+        surfaceColor: AppTheme.frostedCharcoalSlate,
+        borderColor: AppTheme.cyberBorder,
+        opacity: 0.88,
+        borderRadius: 14,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Icon(icon, color: iconColor, size: 20),
+                  const SizedBox(width: 8),
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800,
+                      color: AppTheme.crispAlabaster,
+                    ),
+                  ),
+                ],
+              ),
+              if (badgeWidget != null) badgeWidget,
+            ],
+          ),
+          const SizedBox(height: 12),
+          child,
+        ],
+      ),
     );
   }
 
@@ -656,13 +752,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('• ', style: const TextStyle(color: AppTheme.saudiEmerald, fontWeight: FontWeight.bold)),
+          const Text('• ', style: TextStyle(color: AppTheme.electricCyan, fontWeight: FontWeight.bold)),
           SizedBox(
             width: 140,
-            child: Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+            child: Text(
+              label,
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: AppTheme.crispAlabaster,
+              ),
+            ),
           ),
           Expanded(
-            child: Text(value, style: const TextStyle(fontSize: 12, color: AppTheme.textMuted)),
+            child: Text(
+              value,
+              style: const TextStyle(fontSize: 12, color: AppTheme.mutedSilver),
+            ),
           ),
         ],
       ),

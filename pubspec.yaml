@@ -1,7 +1,7 @@
 name: tea_boy_crm
 description: "Enterprise B2B Staffing CRM for Riyadh Corporate Offices supplying Cleaners, Pantry Staff, and Tea Boys"
 publish_to: 'none'
-version: 2.2.2+6
+version: 2.3.0+7
 
 environment:
   sdk: '>=3.3.0 <4.0.0'

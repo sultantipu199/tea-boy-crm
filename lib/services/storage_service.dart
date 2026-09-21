@@ -75,7 +75,7 @@ class StorageService {
             final cp = sanitizePhone(p);
             if (cp.isNotEmpty) _knownPhones.add(cp);
           }
-          final pid = val['place_id']?.toString()?.trim();
+          final pid = val['place_id']?.toString().trim();
           if (pid != null && pid.isNotEmpty) _knownPlaceIds.add(pid);
           final cname = val['company_name']?.toString();
           if (cname != null) {
@@ -275,7 +275,7 @@ class StorageService {
           if (cleanPhone.isNotEmpty && existingPhone == cleanPhone) {
             return true;
           }
-          final existingPlaceId = val['place_id']?.toString()?.trim();
+          final existingPlaceId = val['place_id']?.toString().trim();
           if (placeId != null &&
               placeId.trim().isNotEmpty &&
               existingPlaceId == placeId.trim()) {
